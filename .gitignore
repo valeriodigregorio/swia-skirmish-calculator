@@ -1,3 +1,5 @@
-/__pycache__/
-/.idea/
-/.cache/
+__pycache__
+.pytest_cache
+.idea
+.cache
+/lib/

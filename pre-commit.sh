@@ -1,7 +1,7 @@
 #!/bin/bash
 git stash -q --keep-index
 
-./run-test.sh
+sh run-test.sh
 RESULT=$?
 
 git stash pop -q

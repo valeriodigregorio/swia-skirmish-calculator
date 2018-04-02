@@ -6,13 +6,9 @@ Download the code from the repository:
 
 `git clone https://github.com/valeriodigregorio/swia-skirmish-calculator.git`
 
-You are suggested to use Continuum Anaconda (https://www.continuum.io/downloads).
+You are suggested to use Continuum Anaconda (https://www.continuum.io/downloads) and also install all the requirements:
 
-Dependencies:
-
-* `pip install matplotlib`
-* `pip install numpy`
-* `pip install pytest`
+`pip install -r requirements.txt`
 
 ## Usage
 
