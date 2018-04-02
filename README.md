@@ -1,4 +1,5 @@
 # "Star Wars: Imperial Assault" Skirmish Calculator
+A Monte Carlo simulator for "Star Wars" Imperial Assault" skirmish.
 
 ## Installation
 
