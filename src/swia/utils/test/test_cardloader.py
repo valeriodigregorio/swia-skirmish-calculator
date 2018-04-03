@@ -25,8 +25,8 @@ class TestCardLoader(unittest.TestCase):
     ])
     def test_get_deployment_card(self, i, result, exc_type):
         try:
-            card, _ = self.loader.get_deployment_card(i)
-            self.assertEqual(result, card['name'])
+            card = self.loader.get_deployment_card(i)
+            self.assertEqual(result, card['data']['name'])
         except (IndexError, TypeError) as e:
             self.assertTrue(type(e) is exc_type)
 

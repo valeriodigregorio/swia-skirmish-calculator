@@ -29,7 +29,7 @@ optional arguments:
 
 Install the pre-commit hook from your workspace root using the following command:
 
-`ln -s ../../pre-commit.sh .git/hooks/pre-commit`
+`ln -s ../../pre-push.sh .git/hooks/pre-push`
 
 ### Unit test run
 

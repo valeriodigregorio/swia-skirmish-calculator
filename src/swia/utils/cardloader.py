@@ -23,17 +23,17 @@ class CardLoader:
             with open(f'{path}/data/{s}.json') as f:
                 self.data[s] = json.load(f)
 
-    def _get_card_by_id(self, source, identifier):
+    def _get_data_by_id(self, source, identifier):
         """
-        Retrieve a card from the collection by ID.
+        Retrieve data from the collection by ID.
         :param source: Source of the card.
         :param identifier: ID of the card.
-        :return: The card with the specified ID.
+        :return: The data with the specified ID.
         """
-        card = self.data[source][identifier]
-        if card['id'] != identifier:
+        data = self.data[source][identifier]
+        if data['id'] != identifier:
             raise IndexError(identifier)
-        return card
+        return data
 
     def get_deployment_card(self, identifier):
         """
@@ -41,8 +41,10 @@ class CardLoader:
         :param identifier: ID of the deployment card.
         :return: The deployment card with the specified ID.
         """
-        return self._get_card_by_id('deployment-cards', identifier), \
-               self._get_card_by_id('deployment-extras', identifier)
+        return {
+            'data': self._get_data_by_id('deployment-cards', identifier),
+            'extras': self._get_data_by_id('deployment-extras', identifier)
+        }
 
     def get_command_card(self, identifier):
         """
@@ -50,4 +52,4 @@ class CardLoader:
         :param identifier: ID of the command card.
         :return: The command card with the specified ID.
         """
-        return self._get_card_by_id('command-cards', identifier)
+        return self._get_data_by_id('command-cards', identifier)

@@ -1,11 +1,11 @@
 """
 test_dice
-Test suite for swia.components.dice module.
+Test suite for swia.model.dice module.
 """
 
 import unittest
 from parameterized import parameterized
-from swia.components.dice import Die
+from swia.model.dice import Die
 
 __author__ = "Valerio Di Gregorio"
 __copyright__ = "Copyright 2018, Valerio Di Gregorio"

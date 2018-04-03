@@ -4,7 +4,6 @@ Dice module for "Star Wars: Imperial Assault"
 """
 
 import random
-from attrdict import AttrDict
 
 __author__ = "Valerio Di Gregorio"
 __copyright__ = "Copyright 2018, Valerio Di Gregorio"
@@ -12,6 +11,22 @@ __date__ = '2018-04-02'
 
 
 class Die:
+
+    @staticmethod
+    def create(die_type):
+        """
+        Create a die of a specific type.
+        :param die_type: Type of the die.
+        :return: An instance of the die object.
+        """
+        return {
+            'blue': Blue(),
+            'green': Green(),
+            'red': Red(),
+            'yellow': Yellow(),
+            'black': Black(),
+            'white': White(),
+        }.get(die_type, None)
 
     def __init__(self, name, attributes):
         """
@@ -35,11 +50,24 @@ class Die:
         Roll the die.
         :return: The result of the roll.
         """
-        f = random.randint(1, self.faces)-1
+        f = random.randint(1, self.faces) - 1
         roll = {}
         for a, v in self.attributes.items():
             roll[a] = v[f]
         return roll
+
+    @staticmethod
+    def roll_pool(dice):
+        """
+        Roll a dice pool and aggregate results.
+        :param dice: Dice pool.
+        :return: The aggregated results of the roll.
+        """
+        result = {}
+        for die in dice:
+            for a, v in die.roll().items():
+                result[a] = result.get(a, 0) + v
+        return result
 
 
 class Blue(Die):
@@ -124,13 +152,3 @@ class White(Die):
             'dodge': [0, 0, 0, 0, 0, 1]
         }
         super().__init__('White', attributes)
-
-
-Dice = AttrDict({
-    'blue': Blue(),
-    'green': Green(),
-    'red': Red(),
-    'yellow': Yellow(),
-    'black': Black(),
-    'white': White(),
-})
