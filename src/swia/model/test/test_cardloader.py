@@ -5,7 +5,7 @@ Test suite for swia.utils.cardloader module.
 
 import unittest
 from parameterized import parameterized
-from swia.utils.cardloader import CardLoader
+from swia.model.cardloader import CardLoader
 
 __author__ = "Valerio Di Gregorio"
 __copyright__ = "Copyright 2018, Valerio Di Gregorio"
@@ -15,7 +15,7 @@ __date__ = '2018-04-02'
 class TestCardLoader(unittest.TestCase):
 
     def setUp(self):
-        self.loader = CardLoader("../lib/imperial-assault-data")
+        self.loader = CardLoader()
 
     @parameterized.expand([
         [None, None, TypeError],

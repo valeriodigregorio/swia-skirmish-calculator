@@ -5,6 +5,7 @@ See https://github.com/lvisintini/imperial-assault-data.
 """
 
 import json
+import os
 
 __author__ = "Valerio Di Gregorio"
 __copyright__ = "Copyright 2018, Valerio Di Gregorio"
@@ -13,14 +14,13 @@ __date__ = '2018-04-02'
 
 class CardLoader:
 
-    def __init__(self, path):
+    def __init__(self):
         """
         Create a card loader for a cards collection.
-        :param path: Path to the cards collection.
         """
         self.data = {}
-        for s in ['deployment-cards', 'deployment-extras', 'command-cards']:
-            with open(f'{path}/data/{s}.json') as f:
+        for s in ['deployment-cards', 'deployment-extras', 'command-cards', 'command-extras']:
+            with open(f'{os.path.dirname(__file__)}/json/{s}.json') as f:
                 self.data[s] = json.load(f)
 
     def _get_data_by_id(self, source, identifier):

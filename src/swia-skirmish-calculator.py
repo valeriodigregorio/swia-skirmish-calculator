@@ -10,7 +10,7 @@ import time
 from swia.engine.actions import Attack
 from swia.engine.engine import Engine, Context
 from swia.model.groups import Group
-from swia.utils.cardloader import CardLoader
+from swia.model.cardloader import CardLoader
 
 __author__ = "Valerio Di Gregorio"
 __copyright__ = "Copyright 2018, Valerio Di Gregorio"
@@ -39,7 +39,7 @@ def main():
                         help="Seed for the RNG.")
     args = parser.parse_args()
 
-    loader = CardLoader("lib/imperial-assault-data")
+    loader = CardLoader()
     attacker_card = get_deployment_card(loader, args.attacker[0], args.attacker[1:])
     defender_card = get_deployment_card(loader, args.defender[0], args.defender[1:])
 
