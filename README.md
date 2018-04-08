@@ -13,21 +13,70 @@ You are suggested to use Continuum Anaconda (https://www.continuum.io/downloads)
 
 ## Usage
 
+You can show at any time the usage by running:
+
 ~~~~
 $ python swia-skirmish-calculator.py -h
-usage: swia-skirmish-calculator.py [-h]
-
-Star Wars Imperial Assault Calculator.
+usage: swia-skirmish-calculator.py [-h] -a ATTACKER [ATTACKER ...] -d DEFENDER
+                                   [DEFENDER ...] -r RANGE [-n RUNS] [-s SEED]
 
 optional arguments:
   -h, --help            show this help message and exit
+  -a ATTACKER [ATTACKER ...], --attacker ATTACKER [ATTACKER ...]
+                        IDs of attacker's deployment cards (in order: card,
+                        upgrade)
+  -d DEFENDER [DEFENDER ...], --defender DEFENDER [DEFENDER ...]
+                        IDs of defender's deployment cards (in order: card,
+                        upgrade)
+  -r RANGE, --range RANGE
+                        distance between attacker and defender
+  -n RUNS, --runs RUNS  number of runs
+  -s SEED, --seed SEED  seed for the RNG
 ~~~~
 
-## Development guidelines
+In example:
 
-### Pre-Commit Hook
+~~~~
+$ python swia-skirmish-calculator.py -a 22 160 -d 25 147 -r 3 -n 20000 -s 0
++-----------------------------+    +--------------------------------+
+| Chewbacca + Wookiee Avenger | VS | Darth Vader + Driven by Hatred |
++-----------------------------+    +--------------------------------+
 
-Install the pre-commit hook from your workspace root using the following command:
+[XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX] [100%]
+
+Elapsed time: 1.74s
+
+---------------------------------------------------------------------
+Total damage @ range 3 (20000 runs)
+---------------------------------------------------------------------
+0: 4.73%
+1: 7.855%
+2: 15.08%
+3: 22.45%
+4: 22.865%
+5: 16.325%
+6: 8.225%
+7: 2.15%
+8: 0.32%
+
+Average: 3.4541 damage(s)
+
+---------------------------------------------------------------------
+Over-surging @ range 3 (20000 runs)
+---------------------------------------------------------------------
+0: 73.07%
+1: 22.12%
+2: 4.54%
+3: 0.27%
+
+Average: 0.3201 surge(s)
+~~~~
+
+## Guidelines
+
+### Pre-Push Hook
+
+Install the pre-push hook from your workspace root using the following command:
 
 `ln -s ../../pre-push.sh .git/hooks/pre-push`
 

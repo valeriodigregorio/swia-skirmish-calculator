@@ -27,16 +27,16 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-a", "--attacker",
                         nargs='+', dest="attacker", type=int, required=True,
-                        help="IDs of attacker's deployment cards.")
+                        help="IDs of attacker's deployment cards (in order: card, upgrade)")
     parser.add_argument("-d", "--defender",
                         nargs='+', dest="defender", type=int, required=True,
-                        help="IDs of defender's deployment cards.")
+                        help="IDs of defender's deployment cards (in order: card, upgrade)")
     parser.add_argument("-r", "--range", dest="range", type=int, required=True,
-                        help="Distance between attacker and defender.")
+                        help="distance between attacker and defender")
     parser.add_argument("-n", "--runs", dest="runs", type=int, required=False, default=20000,
-                        help="Number of runs.")
+                        help="number of runs")
     parser.add_argument("-s", "--seed", dest="seed", type=int, required=False, default=None,
-                        help="Seed for the RNG.")
+                        help="seed for the RNG")
     args = parser.parse_args()
 
     loader = CardLoader()
