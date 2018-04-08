@@ -66,16 +66,19 @@ def main():
     ]
 
     for stat in stats:
+        pdf, cdf, avg = context.get_statistics(stat['stat'])
         print(f"\n{'-'*(len(attacker_card.name)+len(defender_card.name)+12)}")
         print(f"{stat['name']} @ range {args.range} ({args.runs} runs)")
         print(f"{'-'*(len(attacker_card.name)+len(defender_card.name)+12)}")
-
-        total = 0
-        for k in range(0, max(context.stats[stat['stat']].keys()) + 1):
-            m = context.stats[stat['stat']].get(k, 0)
-            print(f"{k}: {100*m/args.runs}%")
-            total += k * m
-        print(f"\nAverage: {total/args.runs} {stat['unit']}(s)")
+        print()
+        print("PDF:")
+        for i in range(0, len(cdf)):
+            print(f"{i}: {pdf[i]}%")
+        print()
+        print("CDF:")
+        for i in range(0, len(cdf)):
+            print(f"{i}: {cdf[i]}%")
+        print(f"\nAverage: {avg} {stat['unit']}(s)")
 
 
 if __name__ == "__main__":

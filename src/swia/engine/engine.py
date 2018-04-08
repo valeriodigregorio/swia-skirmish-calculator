@@ -38,6 +38,27 @@ class Context:
         self.stats['total_damage'][attack.total_damage] = self.stats['total_damage'].get(attack.total_damage, 0) + 1
         self.stats['over_surging'][attack.surge_left] = self.stats['over_surging'].get(attack.surge_left, 0) + 1
 
+    def get_statistics(self, pki):
+        """
+        Retrieve statistics of a given PKI.
+        :param pki: The PKI for the statistics.
+        :return: Statistics for the indicator as PDF, CDF and average.
+        """
+        avg = 0
+        pdf = [0] * (max(self.stats[pki].keys()) + 1)
+        cdf = [0] * len(pdf)
+        for i in range(0, len(pdf)):
+            m = self.stats[pki].get(i, 0)
+            pdf[i] = 100 * m
+            avg += i * m
+            for j in range(0, i + 1):
+                cdf[j] += pdf[i]
+            pdf[i] /= self.runs
+        for i in range(0, len(cdf)):
+            cdf[i] /= self.runs
+        avg /= self.runs
+        return pdf, cdf, avg
+
 
 class Engine:
 
