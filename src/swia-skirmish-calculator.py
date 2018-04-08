@@ -9,8 +9,8 @@ import time
 
 from swia.engine.actions import Attack
 from swia.engine.engine import Engine, Context
-from swia.model.groups import Group
 from swia.model.cardloader import CardLoader
+from swia.model.groups import Group
 
 __author__ = "Valerio Di Gregorio"
 __copyright__ = "Copyright 2018, Valerio Di Gregorio"
@@ -61,16 +61,8 @@ def main():
     print(f"\nElapsed time: {int(elapsed_time*100)/100}s")
 
     stats = [
-        {
-            "name": "Total damage",
-            "stat": "total_damage",
-            "unit": "damage"
-        },
-        {
-            "name": "Over-surging",
-            "stat": "over_surging",
-            "unit": "surge"
-        }
+        {"name": "Total damage", "stat": "total_damage", "unit": "damage"},
+        {"name": "Over-surging", "stat": "over_surging", "unit": "surge"}
     ]
 
     for stat in stats:
