@@ -57,7 +57,7 @@
     },
     "attack": {
       "type": "melee",
-      "pool": ["red", "red", "yellow"]
+      "pool": ["red", "red", "red"]
     },
     "abilities": [
       {
@@ -69,6 +69,10 @@
         "type": "surge",
         "cost": {"surge": 1},
         "effects": {"damage": 2}
+      },
+      {
+        "type": "defensive_reroll",
+        "attack": 1
       }
     ]
   },

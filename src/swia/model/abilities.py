@@ -170,6 +170,7 @@ class SurgeAbility(Ability):
             attack.block += self.get_effect('block')
             attack.evade += self.get_effect('evade')
             attack.dodge += self.get_effect('dodge')
+            attack.surge_abilities.append(self)
             return True
         return False
 

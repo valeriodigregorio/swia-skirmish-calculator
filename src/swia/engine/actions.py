@@ -58,6 +58,7 @@ class Attack(Action):
         self.miss = False
         self.total_damage = 0
         self.surge_left = 0
+        self.surge_abilities = []
 
     def _do_perform(self, context):
         """
@@ -130,7 +131,7 @@ class Attack(Action):
             surge_left = self.surge_left
             abilities = context.attacker.get_abilities('surge', surge_left)
             while gap > 0:
-                ability = self._spend_surge(surge_left, abilities, ['accuracy', 'damage', 'pierce'])
+                ability = self.get_best_ability(surge_left, abilities, ['accuracy', 'damage', 'pierce'])
                 if ability is None:
                     break
                 gap -= ability.get_effect('accuracy')
@@ -147,11 +148,11 @@ class Attack(Action):
 
         # spend remaining surges
         # TODO: Prioritize conditions
-        ability = self._spend_surge(self.surge_left, abilities, ['damage', 'pierce'])
+        ability = self.get_best_ability(self.surge_left, abilities, ['damage', 'pierce'])
         while ability is not None:
             ability.apply(self)
             abilities.remove(ability)
-            ability = self._spend_surge(self.surge_left, abilities, ['damage', 'pierce'])
+            ability = self.get_best_ability(self.surge_left, abilities, ['damage', 'pierce'])
 
     def check_accuracy(self, context):
         """
@@ -173,13 +174,13 @@ class Attack(Action):
             self.total_damage += self.damage - block if self.damage > block else 0
         context.collect_attack_results(self)
 
-    def _spend_surge(self, surge, abilities, priority):
+    def get_best_ability(self, surge, abilities, priority):
         """
-        Spend surges for abilities following a given priority.
+        Calculate the next best ability to use following a given priority.
         :param surge: The amount of available surges.
-        :param abilities: List of available abilities.
+        :param abilities: List of possible abilities.
         :param priority: List of effects to prioritize in descending order of priority.
-        :return: The best ability to apply. None if there's no applicable ability.
+        :return: The best ability to use. None if there's no applicable ability.
         """
         def decorate_ability(a):
             """

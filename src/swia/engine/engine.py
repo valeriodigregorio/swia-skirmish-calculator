@@ -27,16 +27,45 @@ class Context:
         self.attack_range = attack_range
         self.stats = {
             "total_damage": {},
-            "over_surging": {}
+            "over_surging": {},
+            "mitigation": {}
         }
 
     def collect_attack_results(self, attack):
         """
-        Collect results of an attack.
+        Collect results from an attack.
         :param attack: The attack that produced results.
         """
-        self.stats['total_damage'][attack.total_damage] = self.stats['total_damage'].get(attack.total_damage, 0) + 1
-        self.stats['over_surging'][attack.surge_left] = self.stats['over_surging'].get(attack.surge_left, 0) + 1
+        # assess evaded damage
+        evaded_damage = 0
+        evaded_surge = attack.surge if attack.evade > attack.surge else attack.evade
+        abilities = self.attacker.get_abilities('surge', evaded_surge)
+        for a in attack.surge_abilities:
+            if a in abilities:
+                abilities.remove(a)
+        ability = attack.get_best_ability(evaded_surge, abilities, ['damage', 'pierce'])
+        while ability is not None:
+            evaded_surge -= ability.cost
+            evaded_damage += ability.get_effect('damage')
+            abilities.remove(ability)
+            ability = attack.get_best_ability(evaded_surge, abilities, ['damage', 'pierce'])
+
+        # assess blocked damage
+        blocked_damage = attack.block - attack.pierce if attack.block > attack.pierce else 0
+        blocked_damage = attack.damage if blocked_damage > attack.damage else blocked_damage
+
+        # collect samples
+        self._collect_sample('total_damage', attack.total_damage)
+        self._collect_sample('over_surging', attack.surge_left)
+        self._collect_sample('mitigation', blocked_damage + evaded_damage)
+
+    def _collect_sample(self, pki, sample):
+        """
+        Helper method to collect a new sample for a KPI.
+        :param pki: The PKI for the statistics.
+        :param sample: The sample to collect.
+        """
+        self.stats[pki][sample] = self.stats[pki].get(sample, 0) + 1
 
     def get_statistics(self, pki):
         """
