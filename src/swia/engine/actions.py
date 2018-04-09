@@ -123,8 +123,16 @@ class Attack(Action):
         # TODO: parametric priority
         priority = ['damage', 'pierce']
 
-        # retrieve available surges and abilities
+        # retrieve available surges
         self.surge_left = self.surge - self.evade if self.surge > self.evade else 0
+        for a in self.surge_abilities:
+            self.surge_left -= a.cost
+
+        # retrieve list of applicable abilities not yet applied
+        abilities = context.attacker.get_abilities('surge', self.surge_left)
+        for a in self.surge_abilities:
+            if a in abilities:
+                abilities.remove(a)
 
         # check if it's possible to fulfill the accuracy gap
         # TODO: Prioritize recovery effects
@@ -132,17 +140,19 @@ class Attack(Action):
         accuracy_abilities = []
         if gap > 0:
             surge_left = self.surge_left
-            abilities = context.attacker.get_abilities('surge', surge_left)
+            test_abilities = list(abilities)
+            for a in self.surge_abilities:
+                if a in test_abilities:
+                    test_abilities.remove(a)
             while gap > 0:
-                ability = self.get_best_ability(surge_left, abilities, ['accuracy'] + priority)
+                ability = self.get_best_ability(surge_left, test_abilities, ['accuracy'] + priority)
                 if ability is None:
                     break
                 gap -= ability.get_effect('accuracy')
                 accuracy_abilities.append(ability)
-                abilities.remove(ability)
+                test_abilities.remove(ability)
                 surge_left -= ability.cost
 
-        abilities = context.attacker.get_abilities('surge', self.surge_left)
         if gap <= 0:
             # if we can fulfill the accuracy gap, let's apply all the selected surge abilities
             for ability in accuracy_abilities:
@@ -164,18 +174,20 @@ class Attack(Action):
         """
         self.miss = self._get_accuracy_gap(context.attacker.attack_type, context.attack_range) > 0
 
-    def calculate_damage(self, context):
+    def calculate_damage(self, context, collect_results=True):
         """
         Calculate damage (step 7).
         :param context: Context of execution.
+        :param collect_results: If True results will be collected at the end of the step. Default is True.
         """
         self.miss = self.miss or (self.dodge > 0)
         if self.miss:
             self.total_damage = 0
         else:
             block = self.block - self.pierce if self.block > self.pierce else 0
-            self.total_damage += self.damage - block if self.damage > block else 0
-        context.collect_attack_results(self)
+            self.total_damage = self.damage - block if self.damage > block else 0
+        if collect_results:
+            context.collect_attack_results(self)
 
     def get_best_ability(self, surge, abilities, priority):
         """

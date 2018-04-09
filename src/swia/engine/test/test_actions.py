@@ -67,6 +67,7 @@ class TestAttack(unittest.TestCase):
 
     @parameterized.expand([
         [{}, "melee", 1, True],
+        [{}, "melee", 1, True],
         [{}, "melee", 2, False],
         [{}, "reach", 1, True],
         [{}, "reach", 2, True],

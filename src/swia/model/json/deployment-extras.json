@@ -57,7 +57,7 @@
     },
     "attack": {
       "type": "melee",
-      "pool": ["red", "red", "red"]
+      "pool": ["red", "red", "yellow"]
     },
     "abilities": [
       {

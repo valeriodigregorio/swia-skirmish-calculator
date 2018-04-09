@@ -62,7 +62,7 @@ def main():
 
     stats = [
         {"name": "Total damage", "stat": "total_damage", "unit": "damage"},
-        {"name": "Mitigation", "stat": "mitigation", "unit": "damage"},
+        {"name": "Avoidance", "stat": "avoidance", "unit": "damage"},
         {"name": "Over-surging", "stat": "over_surging", "unit": "surge"}
     ]
 
