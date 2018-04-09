@@ -120,6 +120,9 @@ class Attack(Action):
         Spend surges (step 5).
         :param context: Context of execution.
         """
+        # TODO: parametric priority
+        priority = ['damage', 'pierce']
+
         # retrieve available surges and abilities
         self.surge_left = self.surge - self.evade if self.surge > self.evade else 0
 
@@ -131,7 +134,7 @@ class Attack(Action):
             surge_left = self.surge_left
             abilities = context.attacker.get_abilities('surge', surge_left)
             while gap > 0:
-                ability = self.get_best_ability(surge_left, abilities, ['accuracy', 'damage', 'pierce'])
+                ability = self.get_best_ability(surge_left, abilities, ['accuracy'] + priority)
                 if ability is None:
                     break
                 gap -= ability.get_effect('accuracy')
@@ -148,11 +151,11 @@ class Attack(Action):
 
         # spend remaining surges
         # TODO: Prioritize conditions
-        ability = self.get_best_ability(self.surge_left, abilities, ['damage', 'pierce'])
+        ability = self.get_best_ability(self.surge_left, abilities, priority)
         while ability is not None:
             ability.apply(self)
             abilities.remove(ability)
-            ability = self.get_best_ability(self.surge_left, abilities, ['damage', 'pierce'])
+            ability = self.get_best_ability(self.surge_left, abilities, priority)
 
     def check_accuracy(self, context):
         """
