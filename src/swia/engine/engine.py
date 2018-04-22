@@ -28,7 +28,8 @@ class Context:
         self.stats = {
             "total_damage": {},
             "over_surging": {},
-            "avoidance": {}
+            "avoidance": {},
+            "reroll_impact": {}
         }
 
     def collect_attack_results(self, attack):
@@ -38,6 +39,7 @@ class Context:
         """
         self._collect_sample('total_damage', attack.total_damage)
         self._collect_sample('over_surging', attack.surge_left)
+        self._collect_sample('reroll_impact', attack.no_rerolls_total_damage)
 
         # assess blocked damage
         blocked_damage = attack.block - attack.pierce if attack.block > attack.pierce else 0

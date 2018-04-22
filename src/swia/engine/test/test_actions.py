@@ -63,6 +63,8 @@ class TestAttack(unittest.TestCase):
         for a in ["block", "evade", "dodge"]:
             self.assertEqual(defender_abilities.get(a, 0), getattr(attack, a))
 
+    # TODO: test_reroll
+
     # TODO: test_spend_surges
 
     @parameterized.expand([

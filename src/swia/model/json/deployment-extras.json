@@ -72,7 +72,7 @@
       },
       {
         "type": "defensive_reroll",
-        "attack": 1
+        "defense": 1
       }
     ]
   },

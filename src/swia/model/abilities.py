@@ -178,18 +178,26 @@ class SurgeAbility(Ability):
 class RerollAbility(Ability):
 
     def __init__(self, ability):
-        # TODO: Handle rerolls
-        pass
+        ability_type = ability['type']
+        if ability_type != 'defensive_reroll' and ability_type != 'offensive_reroll':
+            raise ValueError(ability_type)
+        self.attack = ability.get('attack', 0)
+        self.defense = ability.get('defense', 0)
+        if self.attack + self.defense == 0:
+            raise ValueError(f"Reroll ability can't reroll zero dice.")
+        super().__init__(ability)
 
-    def apply(self, attack):
+    def apply(self, roll):
         """
         Apply this reroll to the attack.
-        :param attack: The attack where the reroll is performed.
+        :param roll: The roll to reroll.
+        :return: True if reroll was possible. False otherwise.
         """
-        if type(attack) is not Attack:
-            raise TypeError("Can't apply a reroll to an action that isn't an attack action.")
-        # TODO: Handle rerolls
-        return False
+        if roll is None or roll['times'] > 0:
+            return False
+        roll['face'] = roll['die'].roll()
+        roll['times'] += 1
+        return True
 
 
 class ConversionAbility(Ability):

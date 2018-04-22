@@ -45,29 +45,20 @@ class Die:
         self.name = name
         self.attributes = attributes
 
+    def get_face(self, face):
+        """
+        Retrieve the result of a face.
+        :param face: A face of the die.
+        :return: The result of the face.
+        """
+        return {a: v[face] for a, v in self.attributes.items()}
+
     def roll(self):
         """
         Roll the die.
-        :return: The result of the roll.
+        :return: The face that has been rolled.
         """
-        f = random.randint(1, self.faces) - 1
-        roll = {}
-        for a, v in self.attributes.items():
-            roll[a] = v[f]
-        return roll
-
-    @staticmethod
-    def roll_pool(dice):
-        """
-        Roll a dice pool and aggregate results.
-        :param dice: Dice pool.
-        :return: The aggregated results of the roll.
-        """
-        result = {}
-        for die in dice:
-            for a, v in die.roll().items():
-                result[a] = result.get(a, 0) + v
-        return result
+        return random.randint(0, self.faces - 1)
 
 
 class Blue(Die):

@@ -63,7 +63,8 @@ def main():
     stats = [
         {"name": "Total damage", "stat": "total_damage", "unit": "damage"},
         {"name": "Avoidance", "stat": "avoidance", "unit": "damage"},
-        {"name": "Over-surging", "stat": "over_surging", "unit": "surge"}
+        {"name": "Over-surging", "stat": "over_surging", "unit": "surge"},
+        {"name": "Reroll impact", "stat": "reroll_impact", "unit": "damage"},
     ]
 
     for stat in stats:
