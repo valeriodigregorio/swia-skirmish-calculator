@@ -17,52 +17,66 @@ __date__ = '2018-04-02'
 class TestGroups(unittest.TestCase):
 
     @parameterized.expand([
-        [{"data": {"name": "C", "modes": ["Campaign"]},
+        [{"data": {"name": "C", "elite": False, "unique": False,
+                   "modes": ["Campaign"]},
           "extras": {}},
          [],
          None, RuntimeError],
 
-        [{"data": {"name": "C", "modes": ["Skirmish"], "traits": ["Skirmish Upgrade"]},
+        [{"data": {"name": "C", "elite": False, "unique": False,
+                   "modes": ["Skirmish"], "traits": ["Skirmish Upgrade"]},
           "extras": {}},
          [],
          None, RuntimeError],
 
-        [{"data": {"name": "C", "modes": ["Skirmish"], "traits": ["Hunter"], "affiliation": "Rebel"},
+        [{"data": {"name": "C", "elite": False, "unique": False,
+                   "modes": ["Skirmish"], "traits": ["Hunter"], "affiliation": "Rebel"},
           "extras": {}},
          [],
          "C", None],
 
-        [{"data": {"name": "C", "modes": ["Skirmish"], "traits": ["Hunter"], "affiliation": "Rebel"},
+        [{"data": {"name": "C", "elite": False, "unique": False,
+                   "modes": ["Skirmish"], "traits": ["Hunter"], "affiliation": "Rebel"},
           "extras": {}}, [{}, {}],
          None, RuntimeError],
 
-        [{"data": {"name": "C", "modes": ["Skirmish"], "traits": ["Hunter"], "affiliation": "Rebel"},
+        [{"data": {"name": "C", "elite": False, "unique": False,
+                   "modes": ["Skirmish"], "traits": ["Hunter"], "affiliation": "Rebel"},
           "extras": {}},
-         [{"data": {"name": "U", "modes": ["Campaign"]},
+         [{"data": {"name": "U", "elite": False, "unique": False,
+                    "modes": ["Campaign"]},
            "extras": {}}],
          None, RuntimeError],
 
-        [{"data": {"name": "C", "modes": ["Skirmish"], "traits": ["Hunter"], "affiliation": "Rebel"},
+        [{"data": {"name": "C", "elite": False, "unique": False,
+                   "modes": ["Skirmish"], "traits": ["Hunter"], "affiliation": "Rebel"},
           "extras": {}},
-         [{"data": {"name": "U", "modes": ["Skirmish"], "traits": ["Hunter"]},
+         [{"data": {"name": "U", "elite": False, "unique": False,
+                    "modes": ["Skirmish"], "traits": ["Hunter"]},
            "extras": {}}],
          None, RuntimeError],
 
-        [{"data": {"name": "C", "modes": ["Skirmish"], "traits": ["Hunter"], "affiliation": "Rebel"},
+        [{"data": {"name": "C", "elite": False, "unique": False,
+                   "modes": ["Skirmish"], "traits": ["Hunter"], "affiliation": "Rebel"},
           "extras": {}},
-         [{"data": {"name": "U", "modes": ["Skirmish"], "traits": ["Skirmish Upgrade"], "affiliation": "Imperial"},
+         [{"data": {"name": "U", "elite": False, "unique": False,
+                    "modes": ["Skirmish"], "traits": ["Skirmish Upgrade"], "affiliation": "Imperial"},
            "extras": {}}],
          None, RuntimeError],
 
-        [{"data": {"name": "C", "modes": ["Skirmish"], "traits": ["Hunter"], "affiliation": "Rebel"},
+        [{"data": {"name": "C", "elite": False, "unique": False,
+                   "modes": ["Skirmish"], "traits": ["Hunter"], "affiliation": "Rebel"},
           "extras": {}},
-         [{"data": {"name": "U", "modes": ["Skirmish"], "traits": ["Skirmish Upgrade"], "affiliation": "Rebel"},
+         [{"data": {"name": "U", "elite": False, "unique": False,
+                    "modes": ["Skirmish"], "traits": ["Skirmish Upgrade"], "affiliation": "Rebel"},
            "extras": {}}],
          "C + U", None],
 
-        [{"data": {"name": "C", "modes": ["Skirmish"], "traits": ["Hunter"], "affiliation": "Rebel"},
+        [{"data": {"name": "C", "elite": False, "unique": False,
+                   "modes": ["Skirmish"], "traits": ["Hunter"], "affiliation": "Rebel"},
           "extras": {}},
-         [{"data": {"name": "U", "modes": ["Skirmish"], "traits": ["Skirmish Upgrade"], "affiliation": "Neutral"},
+         [{"data": {"name": "U", "elite": False, "unique": False,
+                    "modes": ["Skirmish"], "traits": ["Skirmish Upgrade"], "affiliation": "Neutral"},
            "extras": {}}],
          "C + U", None]
     ])
@@ -74,10 +88,12 @@ class TestGroups(unittest.TestCase):
             self.assertTrue(type(e) is exc_type)
 
     @parameterized.expand([
-        [{"data": {"name": "C", "modes": ["Skirmish"], "traits": ["Hunter"], "affiliation": "Rebel"},
+        [{"data": {"name": "C", "elite": False, "unique": False,
+                   "modes": ["Skirmish"], "traits": ["Hunter"], "affiliation": "Rebel"},
           "extras": {"abilities": [{"type": "surge", "cost": {"surge": 1}, "effects": {"pierce": 2}},
                                    {"type": "defensive_passive", "effects": {"block": 1}}]}},
-         [{"data": {"name": "U", "modes": ["Skirmish"], "traits": ["Skirmish Upgrade"], "affiliation": "Neutral"},
+         [{"data": {"name": "U", "elite": False, "unique": False,
+                    "modes": ["Skirmish"], "traits": ["Skirmish Upgrade"], "affiliation": "Neutral"},
            "extras": {"abilities": [{"type": "offensive_passive", "effects": {"damage": 1}},
                                     {"type": "surge", "cost": {"surge": 2}, "effects": {"damage": 2}}]}}],
          1, 2, 1, 1]

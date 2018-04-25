@@ -18,11 +18,13 @@ __date__ = '2018-04-02'
 
 def make_context(attacker_abilities={}, defender_abilities={}, surge_abilities=[], attack_type="melee", attack_range=1):
     attacker = {
-        "data": {"name": "Attacker", "modes": ["Skirmish"], "traits": [], "affiliation": "Rebel"},
+        "data": {"name": "Attacker", "elite": False, "unique": False,
+                 "modes": ["Skirmish"], "traits": [], "affiliation": "Rebel"},
         "extras": {"attack": {"type": attack_type, "pool": []},
                    "abilities": [{"type": "offensive_passive", "effects": {}}]}}
     defender = {
-        "data": {"name": "Attacker", "modes": ["Skirmish"], "traits": [], "affiliation": "Imperial"},
+        "data": {"name": "Attacker", "elite": False, "unique": False,
+                 "modes": ["Skirmish"], "traits": [], "affiliation": "Imperial"},
         "extras": {"defense": {"pool": []},
                    "abilities": [{"type": "defensive_passive", "effects": {}}]}}
     for k, v in attacker_abilities.items():

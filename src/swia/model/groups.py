@@ -28,7 +28,7 @@ class Group:
             raise RuntimeError(f"{card['data']['name']} is a skirmish upgrade!")
         self._add_abilities(card['extras'].get('abilities', []))
         self._affiliation = card['data']['affiliation']
-        self._name = [card['data']['name']]
+        self._name = [("Elite " if card['data']['elite'] and not card['data']['unique'] else "") + card['data']['name']]
 
         # parse skirmish upgrade cards data
         # TODO: allow use of more than one upgrade if applicable during the round (e.g. from figure close to this group)

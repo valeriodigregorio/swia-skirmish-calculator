@@ -178,6 +178,10 @@ class SurgeAbility(Ability):
 class RerollAbility(Ability):
 
     def __init__(self, ability):
+        """
+        Create a reroll ability
+        :param ability: Data that describes the ability.
+        """
         ability_type = ability['type']
         if ability_type != 'defensive_reroll' and ability_type != 'offensive_reroll':
             raise ValueError(ability_type)
@@ -203,15 +207,55 @@ class RerollAbility(Ability):
 class ConversionAbility(Ability):
 
     def __init__(self, ability):
-        # TODO: Handle conversions
-        pass
+        """
+        Create a conversion ability
+        :param ability: Data that describes the ability.
+        """
+        ability_type = ability['type']
+        self.offensive = (ability_type == 'offensive_conversion')
+        self.defensive = (ability_type == 'defensive_conversion')
+        if not (self.offensive or self.defensive):
+            raise ValueError(ability_type)
+        self.from_attribute = ability['from']
+        self.to_attribute = ability['to']
+        self.min_amount = ability.get('min', None)
+        self.max_amount = ability.get('max', None)
+        super().__init__(ability)
 
-    def apply(self, attack):
+    def can_apply(self, attack):
         """
         Apply this conversion to the attack.
         :param attack: The attack where the conversion is performed.
+        :return: None if conversion can't be applied. Otherwise the number of conversions that can be applied
+                 as a tuple (min, max).
         """
         if type(attack) is not Attack:
             raise TypeError("Can't apply a conversion to an action that isn't an attack action.")
-        # TODO: Handle conversions
-        return False
+        n = getattr(attack, self.from_attribute['attribute'])
+        if n < 0:
+            n = 0
+        mx = self.max_amount if self.max_amount is not None else n
+        mn = self.min_amount if self.min_amount is not None else mx
+        if n < mx:
+            mx = n
+        if n < mn:
+            return None
+        return mn, mx
+
+    def apply(self, attack, n):
+        """
+        Apply this conversion to the attack.
+        :param attack: The attack where the conversion is performed.
+        :param n: Number of units to be converted.
+        :return: True if conversion was possible. False otherwise.
+        """
+        if type(attack) is not Attack:
+            raise TypeError("Can't apply a conversion to an action that isn't an attack action.")
+        k = n // self.from_attribute.get('quantity', 1)
+        n = getattr(attack, self.from_attribute['attribute'])
+        c = k * self.from_attribute.get('amount', 0)
+        setattr(attack, self.from_attribute['attribute'], n - c)
+        n = getattr(attack, self.to_attribute['attribute'])
+        c = k * self.to_attribute.get('amount', 0)
+        setattr(attack, self.to_attribute['attribute'], n + c)
+        return True

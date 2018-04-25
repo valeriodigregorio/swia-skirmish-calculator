@@ -3,6 +3,8 @@ actions
 Actions module for "Star Wars: Imperial Assault"
 """
 
+import copy
+
 __author__ = "Valerio Di Gregorio"
 __copyright__ = "Copyright 2018, Valerio Di Gregorio"
 __date__ = '2018-04-02'
@@ -25,32 +27,6 @@ class Action:
         self.block = 0
         self.evade = 0
         self.dodge = 0
-
-    def save(self):
-        """
-        Save state of the attack.
-        :return: The saved state of the attack.
-        """
-        return {'pierce': self.pierce,
-                'accuracy': self.accuracy,
-                'damage': self.damage,
-                'surge': self.surge,
-                'block': self.block,
-                'evade': self.evade,
-                'dodge': self.dodge}
-
-    def load(self, state):
-        """
-        Load the state of the attack.
-        :param state: The state of the attack.
-        """
-        self.pierce = state['pierce']
-        self.accuracy = state['accuracy']
-        self.damage = state['damage']
-        self.surge = state['surge']
-        self.block = state['block']
-        self.evade = state['evade']
-        self.dodge = state['dodge']
 
     def _do_perform(self, context):
         """
@@ -121,29 +97,54 @@ class Attack(Action):
             for die in pool:
                 rolls.append({'die': die, 'face': die.roll(), 'times': 0})
 
+    def _reset_simulated_attack(self, attack):
+        self.pierce = attack.pierce
+        self.accuracy = attack.accuracy
+        self.damage = attack.damage
+        self.surge = attack.surge
+        self.block = attack.block
+        self.evade = attack.evade
+        self.dodge = attack.dodge
+        self.miss = attack.miss
+        self.total_damage = attack.total_damage
+        self.surge_left = attack.surge_left
+        self.no_rerolls_total_damage = attack.no_rerolls_total_damage
+        self.attack_rolls = attack.attack_rolls
+        self.defense_rolls = attack.defense_rolls
+        self.surge_abilities = []
+
     def _do_rerolls(self, context, reroll_type):
 
-        def get_simulated_attack():
-            a = Attack()
-            a.declare(context)
-            s = a.save()
-            a.attack_rolls = self.attack_rolls
-            a.defense_rolls = self.defense_rolls
-            return a, s
+        def simulate_rerolls():
+            rolls = getattr(self, "{}_rolls".format(reroll_type), None)
+            if rolls is None:
+                raise AttributeError(reroll_type)
 
-        def reset_simulated_attack(a, s):
-            a.load(s)
-            a.miss = False
-            a.total_damage = 0
-            a.surge_left = 0
-            a.surge_abilities = []
+            total = {}
+            current = 0
+            a = Attack()
+            for i, roll in enumerate(rolls):
+                face = roll['face']
+                for f in range(roll['die'].faces):
+                    a._reset_simulated_attack(self)
+                    rolls[i]['face'] = f
+                    a.apply_modifiers(context)
+                    a.spend_surges(context)
+                    a.check_accuracy(context)
+                    a.calculate_damage(context, False)
+                    total[i] = total.get(i, 0) + a.total_damage
+                    if f == face:
+                        current = a.total_damage
+                    rolls[i]['face'] = face
+            return total, current
 
         def perform_reroll(rerolls, test):
+            rolls = getattr(self, "{}_rolls".format(reroll_type), None)
+            if rolls is None:
+                raise AttributeError(reroll_type)
+
             for r in rerolls:
-                n = {
-                    'attack': r.attack,
-                    'defense': r.defense
-                }.get(reroll_type)
+                n = getattr(r, reroll_type, None)
                 for k, dmg in priority:
                     if n == 0:
                         break
@@ -151,31 +152,7 @@ class Attack(Action):
                         if r.apply(rolls[k]):
                             n -= 1
 
-        attack, state = get_simulated_attack()
-        rolls = {
-            'attack': attack.attack_rolls,
-            'defense': attack.defense_rolls
-        }.get(reroll_type, None)
-        if rolls is None:
-            raise AttributeError(reroll_type)
-
-        # simulate all possible reroll cases
-        total_damage = {}
-        current_total_damage = 0
-        for i, roll in enumerate(rolls):
-            face = roll['face']
-            for f in range(roll['die'].faces):
-                rolls[i]['face'] = f
-                attack.apply_modifiers(context)
-                attack.spend_surges(context)
-                attack.check_accuracy(context)
-                attack.calculate_damage(context, False)
-                total_damage[i] = total_damage.get(i, 0) + attack.total_damage
-                if f == face:
-                    current_total_damage = attack.total_damage
-                reset_simulated_attack(attack, state)
-                rolls[i]['face'] = face
-
+        total_damage, current_total_damage = simulate_rerolls()
         priority = sorted(total_damage.items(), key=lambda t: (t[1], t[0]), reverse=True)
         perform_reroll(context.attacker.get_abilities('offensive_reroll'),
                        lambda d: (d > current_total_damage))
@@ -206,6 +183,19 @@ class Attack(Action):
         Apply modifiers (step 4).
         :param context: Context of execution.
         """
+        def simulate_conversion(ability, conversion_range):
+            attack = copy.deepcopy(self)
+            attack.declare(context)
+            total = {}
+            for i in conversion_range:
+                attack._reset_simulated_attack(self)
+                ability.apply(self, i)
+                attack.spend_surges(context)
+                attack.check_accuracy(context)
+                attack.calculate_damage(context, False)
+                total[i] = total.get(i, 0) + attack.total_damage
+            return total
+
         for r in self.attack_rolls:
             result = r['die'].get_face(r['face'])
             self.accuracy += result.get('accuracy', 0)
@@ -218,14 +208,28 @@ class Attack(Action):
             self.evade += result.get('evade', 0)
             self.dodge += result.get('dodge', 0)
 
-        # TODO: Handle modifiers
+        conversions = context.attacker.get_abilities('offensive_conversion') + \
+                      context.defender.get_abilities('defensive_conversion')
+        for conversion in conversions:
+            r = conversion.can_apply(self)
+            if r is not None:
+                if r[0] == r[1]:
+                    n = r[1]
+                else:
+                    total_damage = simulate_conversion(conversion, range(r[0], r[1]+1))
+                    if conversion.offensive:
+                        n = max(total_damage, key=total_damage.get)
+                    if conversion.defensive:
+                        n = min(total_damage, key=total_damage.get)
+                if n > 0:
+                    conversion.apply(self, n)
 
     def spend_surges(self, context):
         """
         Spend surges (step 5).
         :param context: Context of execution.
         """
-        # TODO: parametric priority
+        # TODO: Parametric priority
         priority = ['damage', 'pierce']
 
         # retrieve available surges
@@ -311,10 +315,13 @@ class Attack(Action):
             :param a: The ability to decorate.
             :return: A decorated ability as a tuple.
             """
-            d = a.get_effect('damage')
-            p = a.get_effect('pierce') + self.pierce
-            p = self.block if p > self.block else p
-            d, p = (0, 0) if self.dodge > 0 else (d, p)
+            if self.dodge > 0:
+                d = 0
+                p = 0
+            else:
+                d = a.get_effect('damage')
+                p = a.get_effect('pierce') + self.pierce
+                p = self.block if p > self.block else p
             results = {'accuracy': a.get_effect('accuracy'),
                        'damage': d,
                        'pierce': p,
