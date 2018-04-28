@@ -18,15 +18,8 @@ class Action:
         :param name: Name of the action.
         :param cost: Cost of the action.
         """
-        self.name = name
-        self.cost = cost
-        self.pierce = 0
-        self.accuracy = 0
-        self.damage = 0
-        self.surge = 0
-        self.block = 0
-        self.evade = 0
-        self.dodge = 0
+        self._name = name
+        self._cost = cost
 
     def _do_perform(self, context):
         """
@@ -41,9 +34,9 @@ class Action:
         :param context: Context of execution.
         :return: True if the action has been performed. Otherwise False.
         """
-        if context.actions > self.cost:
+        if context.actions > self._cost:
             self._do_perform(context)
-            context.actions -= self.cost
+            context.actions -= self._cost
             return True
         return False
 
@@ -55,27 +48,106 @@ class Attack(Action):
         Create an attack action.
         """
         super().__init__('Attack', 1)
-        self.miss = False
-        self.total_damage = 0
-        self.surge_left = 0
-        self.no_rerolls_total_damage = None
-        self.surge_abilities = []
-        self.attack_rolls = []
-        self.defense_rolls = []
+
+        # Attributes
+        self.pierce = 0
+        self.accuracy = 0
+        self.damage = 0
+        self.surge = 0
+        self.block = 0
+        self.evade = 0
+        self.dodge = 0
+
+        # Operational
+        self._miss = False
+        self._attack_rolls = []
+        self._defense_rolls = []
+        self._surge_abilities = []
+
+        # Stats
+        self._total_damage = 0
+        self._avoidance = 0
+        self._surge_left = 0
+        self._no_rerolls_total_damage = None
+
+        # Attack
+        self._step = 0
+        self.steps = {
+            1: Attack.declare,
+            2: Attack.roll,
+            3: Attack.reroll,
+            4: Attack.apply_modifiers,
+            5: Attack.spend_surges,
+            6: Attack.check_accuracy,
+            7: Attack.calculate_damage,
+        }
+
+    @property
+    def current_step(self):
+        return self._step
+
+    @property
+    def miss(self):
+        return self._miss
+
+    @property
+    def total_damage(self):
+        return self._total_damage
+
+    @property
+    def avoidance(self):
+        return self._avoidance
+
+    @property
+    def surge_left(self):
+        return self._surge_left
+
+    @property
+    def reroll_impact(self):
+        return self._total_damage - self._no_rerolls_total_damage
 
     def _do_perform(self, context):
+        self.__init__()
+        self._perform_attack(context)
+        self._calculate_avoidance(context)
+
+    def _perform_attack(self, context, from_step=1):
         """
         Perform the action.
         :param context: Context of execution.
+        :param from_step: Perform the attack starting from a specific step, skipping the previous.
         """
-        self.__init__()
-        self.declare(context)
-        self.roll(context)
-        self.reroll(context)
-        self.apply_modifiers(context)
-        self.spend_surges(context)
-        self.check_accuracy(context)
-        self.calculate_damage(context)
+        self._step = from_step
+        while True:
+            step = self.steps.get(self._step, None)
+            if step is None:
+                break
+            step(self, context)
+            self._step += 1
+
+    def _calculate_avoidance(self, context):
+        # save stats
+        total_damage = self.total_damage
+        surge_left = self.surge_left
+        no_rerolls_total_damage = self._no_rerolls_total_damage
+
+        # assess blocked damage
+        blocked_damage = self.block - self.pierce if self.block > self.pierce else 0
+        avoided_damage = self.damage if blocked_damage > self.damage else blocked_damage
+
+        # repeat steps 5-7 as if no evade and dodges were applied
+        self.evade = 0
+        self.dodge = 0
+        self._perform_attack(context, 5)
+
+        # assess evaded/dodged damage
+        avoided_damage += self.total_damage - total_damage
+
+        # revert stats
+        self._total_damage = total_damage
+        self._avoidance = avoided_damage
+        self._surge_left = surge_left
+        self._no_rerolls_total_damage = no_rerolls_total_damage
 
     def declare(self, context):
         """
@@ -92,8 +164,8 @@ class Attack(Action):
         Roll dice (step 2).
         :param context: Context of execution.
         """
-        for rolls, pool in [(self.attack_rolls, context.attacker.attack_pool),
-                            (self.defense_rolls, context.defender.defense_pool)]:
+        for rolls, pool in [(self._attack_rolls, context.attacker.attack_pool),
+                            (self._defense_rolls, context.defender.defense_pool)]:
             for die in pool:
                 rolls.append({'die': die, 'face': die.roll(), 'times': 0})
 
@@ -105,18 +177,18 @@ class Attack(Action):
         self.block = attack.block
         self.evade = attack.evade
         self.dodge = attack.dodge
-        self.miss = attack.miss
-        self.total_damage = attack.total_damage
-        self.surge_left = attack.surge_left
-        self.no_rerolls_total_damage = attack.no_rerolls_total_damage
-        self.attack_rolls = attack.attack_rolls
-        self.defense_rolls = attack.defense_rolls
-        self.surge_abilities = []
+        self._miss = attack._miss
+        self._total_damage = attack._total_damage
+        self._surge_left = attack._surge_left
+        self._no_rerolls_total_damage = attack._no_rerolls_total_damage
+        self._attack_rolls = attack._attack_rolls
+        self._defense_rolls = attack._defense_rolls
+        self._surge_abilities = []
 
     def _do_rerolls(self, context, reroll_type):
 
         def simulate_rerolls():
-            rolls = getattr(self, "{}_rolls".format(reroll_type), None)
+            rolls = getattr(self, "_{}_rolls".format(reroll_type), None)
             if rolls is None:
                 raise AttributeError(reroll_type)
 
@@ -128,18 +200,15 @@ class Attack(Action):
                 for f in range(roll['die'].faces):
                     a._reset_simulated_attack(self)
                     rolls[i]['face'] = f
-                    a.apply_modifiers(context)
-                    a.spend_surges(context)
-                    a.check_accuracy(context)
-                    a.calculate_damage(context, False)
-                    total[i] = total.get(i, 0) + a.total_damage
+                    a._perform_attack(context, 4)
+                    total[i] = total.get(i, 0) + a._total_damage
                     if f == face:
-                        current = a.total_damage
+                        current = a._total_damage
                     rolls[i]['face'] = face
             return total, current
 
         def perform_reroll(rerolls, test):
-            rolls = getattr(self, "{}_rolls".format(reroll_type), None)
+            rolls = getattr(self, "_{}_rolls".format(reroll_type), None)
             if rolls is None:
                 raise AttributeError(reroll_type)
 
@@ -175,8 +244,8 @@ class Attack(Action):
                      (sum(r.defense for r in rerolls), 'defense')]:
             if n > 0:
                 damage = self._do_rerolls(context, t)
-                if self.no_rerolls_total_damage is None:
-                    self.no_rerolls_total_damage = damage
+                if self._no_rerolls_total_damage is None:
+                    self._no_rerolls_total_damage = damage
 
     def apply_modifiers(self, context):
         """
@@ -190,19 +259,17 @@ class Attack(Action):
             for i in conversion_range:
                 attack._reset_simulated_attack(self)
                 ability.apply(self, i)
-                attack.spend_surges(context)
-                attack.check_accuracy(context)
-                attack.calculate_damage(context, False)
-                total[i] = total.get(i, 0) + attack.total_damage
+                attack._perform_attack(context, 5)
+                total[i] = total.get(i, 0) + attack._total_damage
             return total
 
-        for r in self.attack_rolls:
+        for r in self._attack_rolls:
             result = r['die'].get_face(r['face'])
             self.accuracy += result.get('accuracy', 0)
             self.damage += result.get('damage', 0)
             self.surge += result.get('surge', 0)
 
-        for r in self.defense_rolls:
+        for r in self._defense_rolls:
             result = r['die'].get_face(r['face'])
             self.block += result.get('block', 0)
             self.evade += result.get('evade', 0)
@@ -213,9 +280,8 @@ class Attack(Action):
         for conversion in conversions:
             r = conversion.can_apply(self)
             if r is not None:
-                if r[0] == r[1]:
-                    n = r[1]
-                else:
+                n = r[1]
+                if r[0] != r[1]:
                     total_damage = simulate_conversion(conversion, range(r[0], r[1]+1))
                     if conversion.offensive:
                         n = max(total_damage, key=total_damage.get)
@@ -233,13 +299,13 @@ class Attack(Action):
         priority = ['damage', 'pierce']
 
         # retrieve available surges
-        self.surge_left = self.surge - self.evade if self.surge > self.evade else 0
-        for a in self.surge_abilities:
-            self.surge_left -= a.cost
+        self._surge_left = self.surge - self.evade if self.surge > self.evade else 0
+        for a in self._surge_abilities:
+            self._surge_left -= a.cost
 
         # retrieve list of applicable abilities not yet applied
-        abilities = context.attacker.get_abilities('surge', self.surge_left)
-        for a in self.surge_abilities:
+        abilities = context.attacker.get_abilities('surge', self._surge_left)
+        for a in self._surge_abilities:
             if a in abilities:
                 abilities.remove(a)
 
@@ -248,9 +314,9 @@ class Attack(Action):
         gap = self._get_accuracy_gap(context.attacker.attack_type, context.attack_range)
         accuracy_abilities = []
         if gap > 0:
-            surge_left = self.surge_left
+            surge_left = self._surge_left
             test_abilities = list(abilities)
-            for a in self.surge_abilities:
+            for a in self._surge_abilities:
                 if a in test_abilities:
                     test_abilities.remove(a)
             while gap > 0:
@@ -266,39 +332,40 @@ class Attack(Action):
             # if we can fulfill the accuracy gap, let's apply all the selected surge abilities
             for ability in accuracy_abilities:
                 ability.apply(self)
+                self._surge_left -= ability.cost
+                self._surge_abilities.append(ability)
                 abilities.remove(ability)
 
         # spend remaining surges
         # TODO: Prioritize conditions
-        ability = self.get_best_ability(self.surge_left, abilities, priority)
+        ability = self.get_best_ability(self._surge_left, abilities, priority)
         while ability is not None:
             ability.apply(self)
+            self._surge_left -= ability.cost
+            self._surge_abilities.append(ability)
             abilities.remove(ability)
-            ability = self.get_best_ability(self.surge_left, abilities, priority)
+            ability = self.get_best_ability(self._surge_left, abilities, priority)
 
     def check_accuracy(self, context):
         """
         Check accuracy (step 6).
         :param context: Context of execution.
         """
-        self.miss = self._get_accuracy_gap(context.attacker.attack_type, context.attack_range) > 0
+        self._miss = self._get_accuracy_gap(context.attacker.attack_type, context.attack_range) > 0
 
-    def calculate_damage(self, context, collect_results=True):
+    def calculate_damage(self, context):
         """
         Calculate damage (step 7).
         :param context: Context of execution.
-        :param collect_results: If True results will be collected at the end of the step. Default is True.
         """
-        self.miss = self.miss or (self.dodge > 0)
-        if self.miss:
-            self.total_damage = 0
+        self._miss = self._miss or (self.dodge > 0)
+        if self._miss:
+            self._total_damage = 0
         else:
             block = self.block - self.pierce if self.block > self.pierce else 0
-            self.total_damage = self.damage - block if self.damage > block else 0
-            if self.no_rerolls_total_damage is None:
-                self.no_rerolls_total_damage = self.total_damage
-        if collect_results:
-            context.collect_attack_results(self)
+            self._total_damage = self.damage - block if self.damage > block else 0
+            if self._no_rerolls_total_damage is None:
+                self._no_rerolls_total_damage = self._total_damage
 
     def get_best_ability(self, surge, abilities, priority):
         """

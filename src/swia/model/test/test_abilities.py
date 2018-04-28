@@ -63,7 +63,7 @@ class TestPassiveAbility(unittest.TestCase):
 
 class TestSurgeAbility(unittest.TestCase):
 
-    class ActionMock(Action):
+    class AttackMock(Action):
 
         def __init__(self):
             super().__init__('Mock', 0)
@@ -87,7 +87,7 @@ class TestSurgeAbility(unittest.TestCase):
             self.assertTrue(type(e) is exc_type)
 
     @parameterized.expand([
-        [{"type": "surge", "cost": {"surge": 1}}, ActionMock(), 0, False, TypeError],
+        [{"type": "surge", "cost": {"surge": 1}}, AttackMock(), 0, False, TypeError],
         [{"type": "surge", "cost": {"surge": 1}}, Attack(), 0, False, None],
         [{"type": "surge", "cost": {"surge": 2}}, Attack(), 1, False, None],
         [{"type": "surge", "cost": {"surge": 2}}, Attack(), 2, True, None],
@@ -97,7 +97,7 @@ class TestSurgeAbility(unittest.TestCase):
         try:
             ability = Ability.create(data)
             self.assertEqual(SurgeAbility, type(ability))
-            action.surge_left = surge_left
+            action._surge_left = surge_left
             applied = ability.apply(action)
             self.assertEqual(result, applied)
             effect = data.get('effects', {}).get('damage', 0) if applied else 0

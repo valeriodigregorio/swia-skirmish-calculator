@@ -6,6 +6,8 @@ Engine module for "Star Wars: Imperial Assault"
 import random
 import sys
 
+from swia.engine.actions import Attack
+
 __author__ = "Valerio Di Gregorio"
 __copyright__ = "Copyright 2018, Valerio Di Gregorio"
 __date__ = '2018-04-03'
@@ -32,30 +34,15 @@ class Context:
             "reroll_impact": {}
         }
 
-    def collect_attack_results(self, attack):
+    def collect_attack_results(self, attack: Attack):
         """
         Collect results from an attack.
         :param attack: The attack that produced results.
         """
         self._collect_sample('total_damage', attack.total_damage)
+        self._collect_sample('avoidance', attack.avoidance)
         self._collect_sample('over_surging', attack.surge_left)
-        self._collect_sample('reroll_impact', attack.no_rerolls_total_damage)
-
-        # assess blocked damage
-        blocked_damage = attack.block - attack.pierce if attack.block > attack.pierce else 0
-        avoided_damage = attack.damage if blocked_damage > attack.damage else blocked_damage
-
-        # repeat steps 5-7 as if no evade and dodges were rolled
-        total_damage = attack.damage - blocked_damage if attack.damage > blocked_damage else 0
-        attack.evade = 0
-        attack.dodge = 0
-        attack.spend_surges(self)
-        attack.check_accuracy(self)
-        attack.calculate_damage(self, False)
-
-        # assess evaded/dodged damage
-        avoided_damage += attack.total_damage - total_damage
-        self._collect_sample('avoidance', avoided_damage)
+        self._collect_sample('reroll_impact', attack.reroll_impact)
 
     def _collect_sample(self, pki, sample):
         """
@@ -72,19 +59,21 @@ class Context:
         :return: Statistics for the indicator as PDF, CDF and average.
         """
         avg = 0
-        pdf = [0] * (max(self.stats[pki].keys()) + 1)
+        mn = min(self.stats[pki].keys())
+        mx = max(self.stats[pki].keys())
+        pdf = [0] * (abs(mn) + abs(mx) + 1)
         cdf = [0] * len(pdf)
         for i in range(0, len(pdf)):
-            m = self.stats[pki].get(i, 0)
+            m = self.stats[pki].get(mn + i, 0)
             pdf[i] = 100 * m
             avg += i * m
             for j in range(0, i + 1):
                 cdf[j] += pdf[i]
             pdf[i] /= self.runs
-        for i in range(0, len(cdf)):
+        for i in range(0, len(pdf)):
             cdf[i] /= self.runs
         avg /= self.runs
-        return pdf, cdf, avg
+        return list(range(mn, mx + 1)), pdf, cdf, avg
 
 
 class Engine:
@@ -98,5 +87,7 @@ class Engine:
         """
         context.actions = 2
         for action_type in context.sequence:
-            action_type().perform(context)
+            action = action_type()
+            action.perform(context)
+            context.collect_attack_results(action)
         context.runs += 1

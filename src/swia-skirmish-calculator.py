@@ -68,18 +68,18 @@ def main():
     ]
 
     for stat in stats:
-        pdf, cdf, avg = context.get_statistics(stat['stat'])
+        idx, pdf, cdf, avg = context.get_statistics(stat['stat'])
         print(f"\n{'-'*(len(attacker_card.name)+len(defender_card.name)+12)}")
         print(f"{stat['name']} @ range {args.range} ({args.runs} runs)")
         print(f"{'-'*(len(attacker_card.name)+len(defender_card.name)+12)}")
         print()
         print("PDF:")
         for i in range(0, len(cdf)):
-            print(f"{i}: {pdf[i]}%")
+            print(f"{idx[i]}: {pdf[i]}%")
         print()
         print("CDF:")
         for i in range(0, len(cdf)):
-            print(f"{i}: {cdf[i]}%")
+            print(f"{idx[i]}: {cdf[i]}%")
         print(f"\nAverage: {avg} {stat['unit']}(s)")
 
 

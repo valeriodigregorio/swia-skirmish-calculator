@@ -104,5 +104,5 @@ class TestAttack(unittest.TestCase):
         attack = Attack()
         context = make_context(attacker_abilities, defender_abilities)
         attack.declare(context)
-        attack.calculate_damage(context, False)
+        attack.calculate_damage(context)
         self.assertEqual(total_damage, attack.total_damage)

@@ -162,7 +162,6 @@ class SurgeAbility(Ability):
         if type(attack) is not Attack:
             raise TypeError("Can't apply a surge ability to an action that isn't an attack action.")
         if self.can_apply(attack.surge_left):
-            attack.surge_left -= self.cost
             attack.accuracy += self.get_effect('accuracy')
             attack.damage += self.get_effect('damage')
             attack.surge += self.get_effect('surge')
@@ -170,7 +169,6 @@ class SurgeAbility(Ability):
             attack.block += self.get_effect('block')
             attack.evade += self.get_effect('evade')
             attack.dodge += self.get_effect('dodge')
-            attack.surge_abilities.append(self)
             return True
         return False
 
