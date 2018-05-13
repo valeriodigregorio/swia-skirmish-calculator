@@ -334,9 +334,8 @@
         "min": 0,
         "max": 1,
         "from": {
-          "quantity": 1,
           "attribute": "block",
-          "amount": 1
+          "amount": -1
         },
         "to": {
           "attribute": "evade",
@@ -659,9 +658,8 @@
         "min": null,
         "max": null,
         "from": {
-          "quantity": 1,
           "attribute": "dodge",
-          "amount": 1
+          "amount": -1
         },
         "to": {
           "attribute": "evade",

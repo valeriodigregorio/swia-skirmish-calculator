@@ -34,8 +34,8 @@ def main():
     args = parser.parse_args()
 
     loader = CardLoader()
-    attacker = Group(loader.get_deployment_card(args.attacker[0]), loader.get_deployment_card(args.attacker[1]))
-    defender = Group(loader.get_deployment_card(args.defender[0]), loader.get_deployment_card(args.defender[1]))
+    attacker = Group(*[loader.get_deployment_card(i) for i in args.attacker])
+    defender = Group(*[loader.get_deployment_card(i) for i in args.defender])
 
     print(f"+{'-'*(len(attacker.full_name)+2)}+    +{'-'*(len(defender.full_name)+2)}+")
     print(f"| {attacker.full_name} | VS | {defender.full_name} |")

@@ -35,7 +35,7 @@ class Group:
         self._skirmish_upgrade = upgrade
 
         abilities = card['extras']['abilities'] + \
-                    upgrade['extras']['abilities'] if self._skirmish_upgrade is not None else []
+                    (upgrade['extras']['abilities'] if self._skirmish_upgrade is not None else [])
         self._abilities = [Ability.create(ability) for ability in abilities]
 
     @property
@@ -46,8 +46,9 @@ class Group:
         """
         parts = []
         if self._deployment_card['data']['elite'] and not self._deployment_card['data']['unique']:
-            parts.append("Elite")
-        parts.append(self._deployment_card['data']['name'])
+            parts.append("Elite " + self._deployment_card['data']['name'])
+        else:
+            parts.append(self._deployment_card['data']['name'])
         if self._skirmish_upgrade is not None:
             parts.append(self._skirmish_upgrade['data']['name'])
         return " + ".join(parts)
@@ -77,6 +78,6 @@ class Group:
         :return: All the abilities with the requested filters.
         """
         return [a for a in self._abilities
-                if (ability_type is not None and ability_type == a.type)
-                and (trigger is not None and trigger in a.trigger)
-                and (action is not None and action in a.action)]
+                if (ability_type is None or ability_type == a.type)
+                and (trigger is None or trigger in a.trigger)
+                and (action is None or action in a.action)]

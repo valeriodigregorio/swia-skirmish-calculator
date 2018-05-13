@@ -42,7 +42,7 @@ class Context:
         self._collect_sample('total_damage', attack.total_damage)
         self._collect_sample('avoidance', attack.avoidance)
         self._collect_sample('over_surging', attack.surge_left)
-        self._collect_sample('reroll_impact', attack.reroll_impact)
+        self._collect_sample('reroll_impact', attack.total_damage - attack.no_rerolls_total_damage)
 
     def _collect_sample(self, pki, sample):
         """
@@ -87,7 +87,7 @@ class Engine:
         """
         context.actions = 2
         for action_type in context.sequence:
-            action = action_type()
-            action.perform(context)
+            action = action_type(context)
+            action.perform()
             context.collect_attack_results(action)
         context.runs += 1

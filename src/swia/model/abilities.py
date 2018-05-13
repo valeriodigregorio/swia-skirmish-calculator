@@ -3,6 +3,8 @@ abilities
 Abilities module for "Star Wars: Imperial Assault"
 """
 
+import _pickle as pickle
+
 from swia.engine.actions import Attack
 
 __author__ = "Valerio Di Gregorio"
@@ -23,6 +25,7 @@ class Ability:
             'surge': SurgeAbility,
             'reroll': RerollAbility,
             'conversion': ConversionAbility,
+            'passive': Ability,
         }.get(data['type'], None)
         if ability_type is None:
             raise ValueError(f"Unsupported ability type '{data['type']}'.")
@@ -133,24 +136,38 @@ class RerollAbility(Ability):
     def defense(self):
         return self._model.get('defense', 0)
 
-    def can_apply(self, roll):
+    def can_apply(self, attack):
         """
         Check if the ability is applicable.
-        :param roll: The roll to reroll.
+        :param attack: The attack where the ability is performed.
         :return: True if the ability can be applied. False otherwise.
         """
-        return (roll is not None) and (roll['times'] == 0)
+        return True
 
-    def apply(self, roll):
+    def apply(self, attack):
         """
         Apply this reroll to the attack.
-        :param roll: The roll to reroll.
+        :param attack: The attack where the ability is performed.
         :return: True if reroll was possible. False otherwise.
         """
-        if self.can_apply(roll):
-            roll['face'] = roll['die'].roll()
-            roll['times'] += 1
-            return True
+        for reroll_type, n in [('attack', self.attack), ('defense', self.defense)]:
+            if reroll_type in attack.rerolls_priority:
+                priority = attack.rerolls_priority[reroll_type]
+                for k, dmg in priority if reroll_type == self.action else reversed(priority):
+                    if n == 0:
+                        return True
+                    roll = attack.rolls[reroll_type][k]
+                    if self.can_apply(attack) and (roll is not None) and not roll.rerolled:
+                        if reroll_type == self.action:
+                            if dmg / 6 < attack.no_rerolls_total_damage:
+                                return True
+                        else:
+                            if dmg / 6 > attack.no_rerolls_total_damage:
+                                return True
+                        roll.revert(attack)
+                        roll.reroll()
+                        roll.apply(attack)
+                        n -= 1
         return False
 
 
@@ -164,25 +181,20 @@ class ConversionAbility(Ability):
         ability_type = json['type']
         if ability_type != 'conversion':
             raise ValueError(ability_type)
-        self.offensive = json['action'] == 'attack'
-        self.defensive = json['action'] == 'defense'
-        if not (self.offensive or self.defensive):
-            raise ValueError(ability_type)
         self.from_attribute = json['from']
         self.to_attribute = json['to']
         self.min_amount = json.get('min', None)
         self.max_amount = json.get('max', None)
+        self._skip = False
         super().__init__(json)
 
-    def can_apply(self, attack):
+    def get_conversion_range(self, attack):
         """
-        Apply this conversion to the attack.
+        Retrieve the range of units that can be converted during this attack.
         :param attack: The attack where the conversion is performed.
-        :return: None if conversion can't be applied. Otherwise the number of conversions that can be applied
-                 as a tuple (min, max).
+        :return: The range of units that can be converted as a tuple (min, max).
+                 None range if conversion can't be applied.
         """
-        if type(attack) is not Attack:
-            return None
         n = getattr(attack, self.from_attribute['attribute'])
         if n < 0:
             n = 0
@@ -194,20 +206,69 @@ class ConversionAbility(Ability):
             return None
         return mn, mx
 
-    def apply(self, attack, n):
+    def can_apply(self, attack):
+        """
+        Check if the ability is applicable.
+        :param attack: The attack where the conversion is performed.
+        :return: True if the ability can be applied. False otherwise.
+        """
+        if self._skip:
+            return False
+        n = getattr(attack, self.from_attribute['attribute'], 0)
+        r = self.get_conversion_range(attack)
+        if r is None:
+            return False
+        c = self.from_attribute.get('amount', 0)
+        if c == 0:
+            return True
+        return n > r[0]
+
+    def _do_apply(self, attack, n):
+        if n > 0:
+            c = self.from_attribute.get('amount', 0)
+            k = 0 if c == 0 else n // c * c
+            if k != 0:
+                setattr(attack, self.from_attribute['attribute'],
+                        getattr(attack, self.from_attribute['attribute'], 0) - k)
+            c = self.to_attribute.get('amount', 0)
+            k = 0 if c == 0 else n // c * c
+            if k != 0:
+                setattr(attack, self.to_attribute['attribute'],
+                        getattr(attack, self.to_attribute['attribute'], 0) + k)
+
+    def apply(self, attack):
         """
         Apply this conversion to the attack.
         :param attack: The attack where the conversion is performed.
-        :param n: Number of units to be converted.
         :return: True if conversion was possible. False otherwise.
         """
-        if type(attack) is not Attack:
-            raise TypeError("Can't apply a conversion to an action that isn't an attack action.")
-        k = n // self.from_attribute.get('quantity', 1)
-        n = getattr(attack, self.from_attribute['attribute'])
-        c = k * self.from_attribute.get('amount', 0)
-        setattr(attack, self.from_attribute['attribute'], n - c)
-        n = getattr(attack, self.to_attribute['attribute'])
-        c = k * self.to_attribute.get('amount', 0)
-        setattr(attack, self.to_attribute['attribute'], n + c)
+
+        def simulate_conversion(rng):
+            total = {}
+            self._skip = True
+            dump = pickle.dumps(attack, -1)
+            for i in rng:
+                a = pickle.loads(dump)
+                self._do_apply(a, i)
+                a.simulate()
+                total[i] = a.total_damage
+            self._skip = False
+            return sorted(total.items(), key=lambda t: (t[1], t[0]), reverse=True)
+
+        if self._skip:
+            return False
+        r = self.get_conversion_range(attack)
+        if r is None:
+            return False
+        mn, mx = r
+        n = mx
+        if mn != mx:
+            priority = simulate_conversion(range(mn, mx + 1))
+            n = {
+                'attack': priority[0][0],
+                'defense': priority[-1][0],
+            }.get(self.action, None)
+            if n is None:
+                raise AttributeError(self.action)
+        self._do_apply(attack, n)
         return True
