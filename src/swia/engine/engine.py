@@ -61,12 +61,12 @@ class Context:
         avg = 0
         mn = min(self.stats[pki].keys())
         mx = max(self.stats[pki].keys())
-        pdf = [0] * (abs(mn) + abs(mx) + 1)
+        pdf = [0] * (mx - mn + 1)
         cdf = [0] * len(pdf)
         for i in range(0, len(pdf)):
             m = self.stats[pki].get(mn + i, 0)
             pdf[i] = 100 * m
-            avg += i * m
+            avg += (mn + i) * m
             for j in range(0, i + 1):
                 cdf[j] += pdf[i]
             pdf[i] /= self.runs

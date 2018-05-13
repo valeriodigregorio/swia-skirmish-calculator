@@ -17,12 +17,6 @@ __copyright__ = "Copyright 2018, Valerio Di Gregorio"
 __date__ = '2018-04-02'
 
 
-def get_deployment_card(loader, card, upgrades):
-    card = loader.get_deployment_card(card)
-    upgrades = [loader.get_deployment_card(i) for i in upgrades]
-    return Group(card, upgrades)
-
-
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-a", "--attacker",
@@ -40,15 +34,15 @@ def main():
     args = parser.parse_args()
 
     loader = CardLoader()
-    attacker_card = get_deployment_card(loader, args.attacker[0], args.attacker[1:])
-    defender_card = get_deployment_card(loader, args.defender[0], args.defender[1:])
+    attacker = Group(loader.get_deployment_card(args.attacker[0]), loader.get_deployment_card(args.attacker[1]))
+    defender = Group(loader.get_deployment_card(args.defender[0]), loader.get_deployment_card(args.defender[1]))
 
-    print(f"+{'-'*(len(attacker_card.name)+2)}+    +{'-'*(len(defender_card.name)+2)}+")
-    print(f"| {attacker_card.name} | VS | {defender_card.name} |")
-    print(f"+{'-'*(len(attacker_card.name)+2)}+    +{'-'*(len(defender_card.name)+2)}+\n")
+    print(f"+{'-'*(len(attacker.full_name)+2)}+    +{'-'*(len(defender.full_name)+2)}+")
+    print(f"| {attacker.full_name} | VS | {defender.full_name} |")
+    print(f"+{'-'*(len(attacker.full_name)+2)}+    +{'-'*(len(defender.full_name)+2)}+\n")
 
-    context = Context(attacker_card, defender_card, args.range, [Attack], args.seed)
-    n = len(attacker_card.name) + len(defender_card.name) + 3
+    context = Context(attacker, defender, args.range, [Attack], args.seed)
+    n = len(attacker.full_name) + len(defender.full_name) + 3
     start_time = time.time()
     for i in range(args.runs):
         Engine.simulate(context)
@@ -69,12 +63,12 @@ def main():
 
     for stat in stats:
         idx, pdf, cdf, avg = context.get_statistics(stat['stat'])
-        print(f"\n{'-'*(len(attacker_card.name)+len(defender_card.name)+12)}")
+        print(f"\n{'-'*(len(attacker.full_name)+len(defender.full_name)+12)}")
         print(f"{stat['name']} @ range {args.range} ({args.runs} runs)")
-        print(f"{'-'*(len(attacker_card.name)+len(defender_card.name)+12)}")
+        print(f"{'-'*(len(attacker.full_name)+len(defender.full_name)+12)}")
         print()
         print("PDF:")
-        for i in range(0, len(cdf)):
+        for i in range(0, len(pdf)):
             print(f"{idx[i]}: {pdf[i]}%")
         print()
         print("CDF:")

@@ -5,6 +5,8 @@ Actions module for "Star Wars: Imperial Assault"
 
 import copy
 
+from swia.model.dice import Die
+
 __author__ = "Valerio Di Gregorio"
 __copyright__ = "Copyright 2018, Valerio Di Gregorio"
 __date__ = '2018-04-02'
@@ -154,10 +156,7 @@ class Attack(Action):
         Declare target (step 1)
         :param context: Context of execution.
         """
-        abilities = context.attacker.get_abilities('offensive_passive') + \
-                    context.defender.get_abilities('defensive_passive')
-        for ability in abilities:
-            ability.apply(self)
+        pass
 
     def roll(self, context):
         """
@@ -166,8 +165,10 @@ class Attack(Action):
         """
         for rolls, pool in [(self._attack_rolls, context.attacker.attack_pool),
                             (self._defense_rolls, context.defender.defense_pool)]:
-            for die in pool:
-                rolls.append({'die': die, 'face': die.roll(), 'times': 0})
+            if pool is not None:
+                for die in pool:
+                    die = Die.create(die)
+                    rolls.append({'die': die, 'face': die.roll(), 'times': 0})
 
     def _reset_simulated_attack(self, attack):
         self.pierce = attack.pierce
@@ -204,7 +205,7 @@ class Attack(Action):
                     total[i] = total.get(i, 0) + a._total_damage
                     if f == face:
                         current = a._total_damage
-                    rolls[i]['face'] = face
+                rolls[i]['face'] = face
             return total, current
 
         def perform_reroll(rerolls, test):
@@ -218,17 +219,17 @@ class Attack(Action):
                     if n == 0:
                         break
                     if test(dmg / 6):
-                        if r.apply(rolls[k]):
+                        if r.apply(self, rolls[k]):
                             n -= 1
 
         total_damage, current_total_damage = simulate_rerolls()
         priority = sorted(total_damage.items(), key=lambda t: (t[1], t[0]), reverse=True)
-        perform_reroll(context.attacker.get_abilities('offensive_reroll'),
-                       lambda d: (d > current_total_damage))
+        abilities = context.attacker.get_abilities(ability_type='reroll', trigger=self.current_step, action='attack')
+        perform_reroll(abilities, lambda d: (d > current_total_damage))
 
         priority = reversed(priority)
-        perform_reroll(context.defender.get_abilities('defensive_reroll'),
-                       lambda d: (d < current_total_damage))
+        abilities = context.defender.get_abilities(ability_type='reroll', trigger=self.current_step, action='defense')
+        perform_reroll(abilities, lambda d: (d < current_total_damage))
 
         return current_total_damage
 
@@ -237,13 +238,25 @@ class Attack(Action):
         Reroll dice (step 3).
         :param context: Context of execution.
         """
-        rerolls = context.attacker.get_abilities('offensive_reroll') + \
-                  context.defender.get_abilities('defensive_reroll')
+        # TODO handle anything different than rerolls that applies at this step
+        abilities = context.attacker.get_abilities(ability_type='reroll',
+                                                   action='attack',
+                                                   trigger=self.current_step) + \
+                    context.defender.get_abilities(ability_type='reroll',
+                                                   action='defense',
+                                                   trigger=self.current_step)
 
-        for n, t in [(sum(r.attack for r in rerolls), 'attack'),
-                     (sum(r.defense for r in rerolls), 'defense')]:
+        rerolls = {
+            'attack': 0,
+            'defense': 0
+        }
+        for a in abilities:
+            rerolls['attack'] += a.attack
+            rerolls['defense'] += a.defense
+
+        for reroll_type, n in rerolls.items():
             if n > 0:
-                damage = self._do_rerolls(context, t)
+                damage = self._do_rerolls(context, reroll_type)
                 if self._no_rerolls_total_damage is None:
                     self._no_rerolls_total_damage = damage
 
@@ -252,6 +265,7 @@ class Attack(Action):
         Apply modifiers (step 4).
         :param context: Context of execution.
         """
+
         def simulate_conversion(ability, conversion_range):
             attack = copy.deepcopy(self)
             attack.declare(context)
@@ -275,14 +289,20 @@ class Attack(Action):
             self.evade += result.get('evade', 0)
             self.dodge += result.get('dodge', 0)
 
-        conversions = context.attacker.get_abilities('offensive_conversion') + \
-                      context.defender.get_abilities('defensive_conversion')
+        # TODO handle anything different than conversions that applies at this step
+        conversions = context.attacker.get_abilities(ability_type='conversion',
+                                                     action='attack',
+                                                     trigger=self.current_step) + \
+                      context.defender.get_abilities(ability_type='conversion',
+                                                     action='defense',
+                                                     trigger=self.current_step)
+
         for conversion in conversions:
             r = conversion.can_apply(self)
             if r is not None:
                 n = r[1]
                 if r[0] != r[1]:
-                    total_damage = simulate_conversion(conversion, range(r[0], r[1]+1))
+                    total_damage = simulate_conversion(conversion, range(r[0], r[1] + 1))
                     if conversion.offensive:
                         n = max(total_damage, key=total_damage.get)
                     if conversion.defensive:
@@ -304,7 +324,8 @@ class Attack(Action):
             self._surge_left -= a.cost
 
         # retrieve list of applicable abilities not yet applied
-        abilities = context.attacker.get_abilities('surge', self._surge_left)
+        # TODO handle anything different than attacker's surge abilities that applies at this step
+        abilities = context.attacker.get_abilities(ability_type='surge', action='attack', trigger=self.current_step)
         for a in self._surge_abilities:
             if a in abilities:
                 abilities.remove(a)
@@ -320,13 +341,14 @@ class Attack(Action):
                 if a in test_abilities:
                     test_abilities.remove(a)
             while gap > 0:
-                ability = self.get_best_ability(surge_left, test_abilities, ['accuracy'] + priority)
+                ability = self.get_best_ability(test_abilities, ['accuracy'] + priority)
                 if ability is None:
                     break
-                gap -= ability.get_effect('accuracy')
+                gap -= ability.effects['accuracy']
                 accuracy_abilities.append(ability)
                 test_abilities.remove(ability)
-                surge_left -= ability.cost
+                self._surge_left -= ability.cost
+            self._surge_left = surge_left
 
         if gap <= 0:
             # if we can fulfill the accuracy gap, let's apply all the selected surge abilities
@@ -338,13 +360,13 @@ class Attack(Action):
 
         # spend remaining surges
         # TODO: Prioritize conditions
-        ability = self.get_best_ability(self._surge_left, abilities, priority)
+        ability = self.get_best_ability(abilities, priority)
         while ability is not None:
             ability.apply(self)
             self._surge_left -= ability.cost
             self._surge_abilities.append(ability)
             abilities.remove(ability)
-            ability = self.get_best_ability(self._surge_left, abilities, priority)
+            ability = self.get_best_ability(abilities, priority)
 
     def check_accuracy(self, context):
         """
@@ -364,45 +386,44 @@ class Attack(Action):
         else:
             block = self.block - self.pierce if self.block > self.pierce else 0
             self._total_damage = self.damage - block if self.damage > block else 0
-            if self._no_rerolls_total_damage is None:
-                self._no_rerolls_total_damage = self._total_damage
 
-    def get_best_ability(self, surge, abilities, priority):
+        if self._no_rerolls_total_damage is None:
+            self._no_rerolls_total_damage = self._total_damage
+
+    def get_best_ability(self, abilities, priority):
         """
         Calculate the next best ability to use following a given priority.
-        :param surge: The amount of available surges.
         :param abilities: List of possible abilities.
         :param priority: List of effects to prioritize in descending order of priority.
         :return: The best ability to use. None if there's no applicable ability.
         """
 
-        def decorate_ability(a):
+        def decorate_ability(a, pr):
             """
             Produces a decorated ability.
             :param a: The ability to decorate.
+            :param pr: List of effects to prioritize in descending order of priority.
             :return: A decorated ability as a tuple.
             """
             if self.dodge > 0:
                 d = 0
                 p = 0
             else:
-                d = a.get_effect('damage')
-                p = a.get_effect('pierce') + self.pierce
+                d = a.effects['damage']
+                p = a.effects['pierce'] + self.pierce
                 p = self.block if p > self.block else p
-            results = {'accuracy': a.get_effect('accuracy'),
-                       'damage': d,
-                       'pierce': p,
-                       'ability': a}
-            result = [results.get(x, 0) for x in (priority + ['ability'])]
-            if sum(result[:-1]) <= 0:
-                result[-1] = None
-            return tuple(result)
+            res = {
+                'accuracy': a.effects['accuracy'],
+                'damage': d,
+                'pierce': p
+            }
+            return [res[x] for x in pr], a
 
-        decorated_abilities = sorted([decorate_ability(a) for a in abilities], key=lambda a: a[:-1], reverse=True)
-        for decorated_ability in decorated_abilities:
-            ability = decorated_ability[-1]
-            if ability is not None and ability.can_apply(surge):
-                return ability
+        abilities = sorted([decorate_ability(a, priority) for a in abilities], key=lambda a: a[:-1], reverse=True)
+        for decoration, ability in abilities:
+            if sum(decoration) > 0:
+                if ability.can_apply(self):
+                    return ability
         return None
 
     def _get_accuracy_gap(self, attack_type, attack_range):

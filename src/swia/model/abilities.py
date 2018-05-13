@@ -13,95 +13,53 @@ __date__ = '2018-04-02'
 class Ability:
 
     @staticmethod
-    def create(data, *args, **kwargs):
+    def create(data):
         """
         Create an ability from data.
         :param data: Data of the ability.
-        :param args: Additional arguments for the specific ability type.
-        :param kwargs: Additional keyword arguments for the specific ability type.
         :return: An instance of the ability object.
         """
         ability_type = {
-            'defensive_passive': PassiveAbility,
-            'offensive_passive': PassiveAbility,
-            'defensive_reroll': RerollAbility,
-            'offensive_reroll': RerollAbility,
-            'defensive_conversion': ConversionAbility,
-            'offensive_conversion': ConversionAbility,
-            'surge': SurgeAbility
+            'surge': SurgeAbility,
+            'reroll': RerollAbility,
+            'conversion': ConversionAbility,
         }.get(data['type'], None)
         if ability_type is None:
             raise ValueError(f"Unsupported ability type '{data['type']}'.")
-        return ability_type(data, *args, **kwargs)
+        return ability_type(data)
 
-    def __init__(self, ability, cost=0):
+    def __init__(self, json):
         """
         Create an ability
-        :param ability: Data that describes the ability.
-        :param cost: Cost of the ability. Measurement unit depends on the type of the ability.
+        :param json: Data model that describes the ability in JSON.
         """
-        self._type = ability.get('type', None)
+        self._type = json.get('type', None)
         if self._type is None:
             raise ValueError(self._type)
-        self._cost = cost
-        self._effects = ability.get('effects', {})
-        self._conditions = set(ability.get('conditions', []))
+        self._model = json
+        self.effects = self._model.get('effects', {})
+        for key in ['accuracy', 'damage', 'surge', 'pierce', 'block', 'evade', 'dodge']:
+            self.effects[key] = self.effects.get(key, 0)
 
     @property
-    def cost(self):
-        """
-        Retrieve the cost of the ability.
-        :return: Cost of the ability.
-        """
-        return self._cost
+    def type(self):
+        return self._model['type']
 
     @property
-    def conditions(self):
-        """
-        Retrieve the list of conditions applied by this ability.
-        :return: Set of condition names.
-        """
-        return self._conditions
+    def trigger(self):
+        return self._model['trigger']
 
     @property
-    def effects(self):
-        """
-        Retrieve the list of effects applied by this ability.
-        :return: Mapping of effect name to amount applied.
-        """
-        return self._effects
+    def action(self):
+        return self._model['action']
 
-    def get_effect(self, name):
-        """
-        Retrieve the amount of a specific effect applied using the ability.
-        :param name: Name of the effect.
-        :return: The amount of the effect applied by the ability if used.
-        """
-        return self._effects.get(name, 0)
-
-    def can_apply_condition(self, name):
-        """
-        Check if a specific condition is applied using the ability.
-        :param name: Name of the condition.
-        :return: True if the ability can apply the condition. False otherwise.
-        """
-        return name in self._conditions
-
-    def can_apply_conditions(self, names):
-        """
-        Check if a specific conditions are applied using the ability.
-        :param names: A list of condition names.
-        :return: A tuple with the applicability of each conditions.
-        """
-        return tuple(self.can_apply_condition(name) for name in names)
-
-    def can_apply(self, availability):
+    def can_apply(self, action):
         """
         Check if the ability is applicable.
-        :param availability: Units available to pay the cost of the ability.
+        :param action: The action where the ability is performed.
         :return: True if the ability can be applied. False otherwise.
         """
-        return (availability if availability > 0 else 0) >= self.cost
+        raise NotImplementedError()
 
     def apply(self, action):
         """
@@ -111,83 +69,77 @@ class Ability:
         raise NotImplementedError()
 
 
-class PassiveAbility(Ability):
-
-    def __init__(self, ability):
-        """
-        Create a passive ability
-        :param ability: Data that describes the ability.
-        """
-        ability_type = ability['type']
-        if ability_type != 'offensive_passive' and ability_type != 'defensive_passive':
-            raise ValueError(ability_type)
-        super().__init__(ability)
-
-    def apply(self, action):
-        """
-        Apply the ability to the action.
-        :param action: The action where the ability is performed.
-        """
-        # TODO: Handle action triggers
-        action.accuracy += self.get_effect('accuracy')
-        action.damage += self.get_effect('damage')
-        action.surge += self.get_effect('surge')
-        action.pierce += self.get_effect('pierce')
-        action.block += self.get_effect('block')
-        action.evade += self.get_effect('evade')
-        action.dodge += self.get_effect('dodge')
-        return True
-
-
 class SurgeAbility(Ability):
 
-    def __init__(self, ability):
+    def __init__(self, json):
         """
         Create a surge ability
-        :param ability: Data that describes the ability.
+        :param json: Data model that describes the ability in JSON.
         """
-        ability_type = ability['type']
+        ability_type = json['type']
         if ability_type != 'surge':
             raise ValueError(ability_type)
-        cost = ability.get('cost', {}).get('surge', 0)
-        if cost == 0:
-            raise ValueError(f"Surge ability can't have cost zero.")
-        super().__init__(ability, cost)
+        super().__init__(json)
+
+    @property
+    def cost(self):
+        """
+        Retrieve the cost of the ability.
+        :return: Cost of the ability.
+        """
+        return self._model.get('cost', 0)
+
+    def can_apply(self, attack):
+        """
+        Check if the ability is applicable.
+        :param attack: The attack where the ability is performed.
+        :return: True if the ability can be applied. False otherwise.
+        """
+        if type(attack) is not Attack:
+            return False
+        return attack.surge_left >= self.cost
 
     def apply(self, attack):
         """
         Apply this surge ability to the attack.
         :param attack: The attack where the ability is performed.
         """
-        if type(attack) is not Attack:
-            raise TypeError("Can't apply a surge ability to an action that isn't an attack action.")
-        if self.can_apply(attack.surge_left):
-            attack.accuracy += self.get_effect('accuracy')
-            attack.damage += self.get_effect('damage')
-            attack.surge += self.get_effect('surge')
-            attack.pierce += self.get_effect('pierce')
-            attack.block += self.get_effect('block')
-            attack.evade += self.get_effect('evade')
-            attack.dodge += self.get_effect('dodge')
+        if self.can_apply(attack):
+            for key in ['accuracy', 'damage', 'surge', 'pierce', 'block', 'evade', 'dodge']:
+                setattr(attack, key, getattr(attack, key) + self.effects[key])
             return True
         return False
 
 
 class RerollAbility(Ability):
 
-    def __init__(self, ability):
+    def __init__(self, json):
         """
         Create a reroll ability
-        :param ability: Data that describes the ability.
+        :param json: Data model that describes the ability in JSON.
         """
-        ability_type = ability['type']
-        if ability_type != 'defensive_reroll' and ability_type != 'offensive_reroll':
+        ability_type = json['type']
+        if ability_type != 'reroll':
             raise ValueError(ability_type)
-        self.attack = ability.get('attack', 0)
-        self.defense = ability.get('defense', 0)
-        if self.attack + self.defense == 0:
+        if json.get('attack', 0) + json.get('defense', 0) == 0:
             raise ValueError(f"Reroll ability can't reroll zero dice.")
-        super().__init__(ability)
+        super().__init__(json)
+
+    @property
+    def attack(self):
+        return self._model.get('attack', 0)
+
+    @property
+    def defense(self):
+        return self._model.get('defense', 0)
+
+    def can_apply(self, roll):
+        """
+        Check if the ability is applicable.
+        :param roll: The roll to reroll.
+        :return: True if the ability can be applied. False otherwise.
+        """
+        return (roll is not None) and (roll['times'] == 0)
 
     def apply(self, roll):
         """
@@ -195,30 +147,32 @@ class RerollAbility(Ability):
         :param roll: The roll to reroll.
         :return: True if reroll was possible. False otherwise.
         """
-        if roll is None or roll['times'] > 0:
-            return False
-        roll['face'] = roll['die'].roll()
-        roll['times'] += 1
-        return True
+        if self.can_apply(roll):
+            roll['face'] = roll['die'].roll()
+            roll['times'] += 1
+            return True
+        return False
 
 
 class ConversionAbility(Ability):
 
-    def __init__(self, ability):
+    def __init__(self, json):
         """
         Create a conversion ability
-        :param ability: Data that describes the ability.
+        :param json: Data model that describes the ability in JSON.
         """
-        ability_type = ability['type']
-        self.offensive = (ability_type == 'offensive_conversion')
-        self.defensive = (ability_type == 'defensive_conversion')
+        ability_type = json['type']
+        if ability_type != 'conversion':
+            raise ValueError(ability_type)
+        self.offensive = json['action'] == 'attack'
+        self.defensive = json['action'] == 'defense'
         if not (self.offensive or self.defensive):
             raise ValueError(ability_type)
-        self.from_attribute = ability['from']
-        self.to_attribute = ability['to']
-        self.min_amount = ability.get('min', None)
-        self.max_amount = ability.get('max', None)
-        super().__init__(ability)
+        self.from_attribute = json['from']
+        self.to_attribute = json['to']
+        self.min_amount = json.get('min', None)
+        self.max_amount = json.get('max', None)
+        super().__init__(json)
 
     def can_apply(self, attack):
         """
@@ -228,7 +182,7 @@ class ConversionAbility(Ability):
                  as a tuple (min, max).
         """
         if type(attack) is not Attack:
-            raise TypeError("Can't apply a conversion to an action that isn't an attack action.")
+            return None
         n = getattr(attack, self.from_attribute['attribute'])
         if n < 0:
             n = 0

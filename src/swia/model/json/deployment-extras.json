@@ -85,9 +85,8 @@
       {
         "trigger": [5],
         "type": "surge",
-        "cost": {
-          "surge": 1
-        },
+        "action": "attack",
+        "cost": 1,
         "effects": {
           "damage": 2
         }
@@ -95,9 +94,8 @@
       {
         "trigger": [5],
         "type": "surge",
-        "cost": {
-          "surge": 1
-        },
+        "action": "attack",
+        "cost": 1,
         "conditions": [
           "stun"
         ]
@@ -105,9 +103,8 @@
       {
         "trigger": [5],
         "type": "surge",
-        "cost": {
-          "surge": 1
-        },
+        "action": "attack",
+        "cost": 1,
         "effects": {
           "accuracy": 2
         }
@@ -140,9 +137,8 @@
       {
         "trigger": [5],
         "type": "surge",
-        "cost": {
-          "surge": 1
-        },
+        "action": "attack",
+        "cost": 1,
         "effects": {
           "pierce": 3
         }
@@ -150,16 +146,17 @@
       {
         "trigger": [5],
         "type": "surge",
-        "cost": {
-          "surge": 1
-        },
+        "action": "attack",
+        "cost": 1,
         "effects": {
           "damage": 2
         }
       },
       {
         "name": "Foresight",
-        "type": "defensive_reroll",
+        "trigger": [3],
+        "type": "reroll",
+        "action": "defense",
         "defense": 1
       }
     ]
@@ -314,9 +311,8 @@
       {
         "trigger": [5],
         "type": "surge",
-        "cost": {
-          "surge": 1
-        },
+        "action": "attack",
+        "cost": 1,
         "effects": {
           "damage": 2
         }
@@ -324,9 +320,8 @@
       {
         "trigger": [5],
         "type": "surge",
-        "cost": {
-          "surge": 1
-        },
+        "action": "attack",
+        "cost": 1,
         "effects": {
           "accuracy": 3
         }
@@ -334,7 +329,8 @@
       {
         "name": "Agile",
         "trigger": [4],
-        "type": "defensive_conversion",
+        "type": "conversion",
+        "action": "defense",
         "min": 0,
         "max": 1,
         "from": {
@@ -349,8 +345,9 @@
       },
       {
         "name": "Fly-By",
+        "type": "passive",
+        "action": "attack",
         "trigger": [2],
-        "type": "offensive_passive",
         "effects": {
           "add_attack_dice": [
             "blue"
@@ -591,15 +588,18 @@
     "id": 147,
     "abilities": [
       {
-        "trigger": [1],
-        "type": "offensive_passive",
+        "trigger": [5],
+        "type": "surge",
+        "action": "attack",
+        "cost": 0,
         "effects": {
           "damage": 1
         }
       },
       {
         "trigger": [3],
-        "type": "offensive_reroll",
+        "type": "reroll",
+        "action": "attack",
         "attack": 1
       }
     ]
@@ -644,15 +644,18 @@
     "id": 160,
     "abilities": [
       {
-        "trigger": [1],
-        "type": "offensive_passive",
+        "trigger": [5],
+        "type": "surge",
+        "action": "attack",
+        "cost": 0,
         "effects": {
           "damage": 1
         }
       },
       {
         "trigger": [4],
-        "type": "defensive_conversion",
+        "type": "conversion",
+        "action": "defense",
         "min": null,
         "max": null,
         "from": {
