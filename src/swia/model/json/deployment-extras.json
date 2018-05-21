@@ -83,27 +83,39 @@
     },
     "abilities": [
       {
-        "trigger": [5],
+        "trigger": [
+          5
+        ],
         "type": "surge",
-        "action": "attack",
+        "action": [
+          "attack"
+        ],
         "cost": 1,
         "effects": {
           "damage": 2
         }
       },
       {
-        "trigger": [5],
+        "trigger": [
+          5
+        ],
         "type": "surge",
-        "action": "attack",
+        "action": [
+          "attack"
+        ],
         "cost": 1,
         "conditions": [
           "stun"
         ]
       },
       {
-        "trigger": [5],
+        "trigger": [
+          5
+        ],
         "type": "surge",
-        "action": "attack",
+        "action": [
+          "attack"
+        ],
         "cost": 1,
         "effects": {
           "accuracy": 2
@@ -135,18 +147,26 @@
     },
     "abilities": [
       {
-        "trigger": [5],
+        "trigger": [
+          5
+        ],
         "type": "surge",
-        "action": "attack",
+        "action": [
+          "attack"
+        ],
         "cost": 1,
         "effects": {
           "pierce": 3
         }
       },
       {
-        "trigger": [5],
+        "trigger": [
+          5
+        ],
         "type": "surge",
-        "action": "attack",
+        "action": [
+          "attack"
+        ],
         "cost": 1,
         "effects": {
           "damage": 2
@@ -154,9 +174,13 @@
       },
       {
         "name": "Foresight",
-        "trigger": [3],
+        "trigger": [
+          3
+        ],
         "type": "reroll",
-        "action": "defense",
+        "action": [
+          "defense"
+        ],
         "defense": 1
       }
     ]
@@ -234,7 +258,69 @@
     "id": 49
   },
   {
-    "id": 50
+    "id": 50,
+    "defense": {
+      "pool": [
+        "white"
+      ]
+    },
+    "attack": {
+      "type": "ranged",
+      "pool": [
+        "blue",
+        "green",
+        "green"
+      ]
+    },
+    "abilities": [
+      {
+        "trigger": [
+          5
+        ],
+        "type": "surge",
+        "action": [
+          "attack"
+        ],
+        "cost": 1,
+        "effects": {
+          "accuracy": 2,
+          "damage": 1
+        }
+      },
+      {
+        "trigger": [
+          5
+        ],
+        "type": "surge",
+        "action": [
+          "attack"
+        ],
+        "cost": 1,
+        "effects": {
+          "damage": 2
+        }
+      },
+      {
+        "name": "Cunning",
+        "trigger": [
+          4
+        ],
+        "type": "conversion",
+        "action": [
+          "defense"
+        ],
+        "min": null,
+        "max": null,
+        "from": {
+          "attribute": "evade",
+          "amount": 0
+        },
+        "to": {
+          "attribute": "block",
+          "amount": 1
+        }
+      }
+    ]
   },
   {
     "id": 51
@@ -309,18 +395,26 @@
     },
     "abilities": [
       {
-        "trigger": [5],
+        "trigger": [
+          5
+        ],
         "type": "surge",
-        "action": "attack",
+        "action": [
+          "attack"
+        ],
         "cost": 1,
         "effects": {
           "damage": 2
         }
       },
       {
-        "trigger": [5],
+        "trigger": [
+          5
+        ],
         "type": "surge",
-        "action": "attack",
+        "action": [
+          "attack"
+        ],
         "cost": 1,
         "effects": {
           "accuracy": 3
@@ -328,9 +422,13 @@
       },
       {
         "name": "Agile",
-        "trigger": [4],
+        "trigger": [
+          4
+        ],
         "type": "conversion",
-        "action": "defense",
+        "action": [
+          "defense"
+        ],
         "min": 0,
         "max": 1,
         "from": {
@@ -344,14 +442,13 @@
       },
       {
         "name": "Fly-By",
-        "type": "passive",
-        "action": "attack",
-        "trigger": [2],
-        "effects": {
-          "add_attack_dice": [
-            "blue"
-          ]
-        }
+        "type": "complex",
+        "action": [
+          "attack"
+        ],
+        "trigger": [
+          1
+        ]
       }
     ]
   },
@@ -587,18 +684,26 @@
     "id": 147,
     "abilities": [
       {
-        "trigger": [5],
+        "trigger": [
+          5
+        ],
         "type": "surge",
-        "action": "attack",
+        "action": [
+          "attack"
+        ],
         "cost": 0,
         "effects": {
           "damage": 1
         }
       },
       {
-        "trigger": [3],
+        "trigger": [
+          3
+        ],
         "type": "reroll",
-        "action": "attack",
+        "action": [
+          "attack"
+        ],
         "attack": 1
       }
     ]
@@ -631,7 +736,19 @@
     "id": 156
   },
   {
-    "id": 157
+    "id": 157,
+    "abilities": [
+      {
+        "trigger": [
+          3
+        ],
+        "type": "reroll",
+        "action": [
+          "attack"
+        ],
+        "attack": 1
+      }
+    ]
   },
   {
     "id": 158
@@ -643,18 +760,26 @@
     "id": 160,
     "abilities": [
       {
-        "trigger": [5],
+        "trigger": [
+          5
+        ],
         "type": "surge",
-        "action": "attack",
+        "action": [
+          "attack"
+        ],
         "cost": 0,
         "effects": {
           "damage": 1
         }
       },
       {
-        "trigger": [4],
+        "trigger": [
+          4
+        ],
         "type": "conversion",
-        "action": "defense",
+        "action": [
+          "defense"
+        ],
         "min": null,
         "max": null,
         "from": {

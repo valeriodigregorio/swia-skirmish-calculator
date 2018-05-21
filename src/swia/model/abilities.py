@@ -5,7 +5,7 @@ Abilities module for "Star Wars: Imperial Assault"
 
 import _pickle as pickle
 
-from swia.engine.actions import Attack
+from swia.engine.actions import Attack, Roll
 
 __author__ = "Valerio Di Gregorio"
 __copyright__ = "Copyright 2018, Valerio Di Gregorio"
@@ -21,11 +21,19 @@ class Ability:
         :param data: Data of the ability.
         :return: An instance of the ability object.
         """
+        def create_complex_ability(d):
+            t = {
+                'Fly-By': FlyByAbility,
+            }.get(d['name'], None)
+            if t is None:
+                raise ValueError(f"Unsupported ability name '{d['name']}'.")
+            return t(d)
+
         ability_type = {
             'surge': SurgeAbility,
             'reroll': RerollAbility,
             'conversion': ConversionAbility,
-            'passive': Ability,
+            'complex': create_complex_ability,
         }.get(data['type'], None)
         if ability_type is None:
             raise ValueError(f"Unsupported ability type '{data['type']}'.")
@@ -104,7 +112,7 @@ class SurgeAbility(Ability):
 
     def apply(self, attack):
         """
-        Apply this surge ability to the attack.
+        Apply the ability to the action.
         :param attack: The attack where the ability is performed.
         """
         if self.can_apply(attack):
@@ -146,19 +154,18 @@ class RerollAbility(Ability):
 
     def apply(self, attack):
         """
-        Apply this reroll to the attack.
+        Apply the ability to the action.
         :param attack: The attack where the ability is performed.
-        :return: True if reroll was possible. False otherwise.
         """
         for reroll_type, n in [('attack', self.attack), ('defense', self.defense)]:
             if reroll_type in attack.rerolls_priority:
                 priority = attack.rerolls_priority[reroll_type]
-                for k, dmg in priority if reroll_type == self.action else reversed(priority):
+                for k, dmg in priority if reroll_type in self.action else reversed(priority):
                     if n == 0:
                         return True
                     roll = attack.rolls[reroll_type][k]
                     if self.can_apply(attack) and (roll is not None) and not roll.rerolled:
-                        if reroll_type == self.action:
+                        if reroll_type in self.action:
                             if dmg / 6 < attack.no_rerolls_total_damage:
                                 return True
                         else:
@@ -209,7 +216,7 @@ class ConversionAbility(Ability):
     def can_apply(self, attack):
         """
         Check if the ability is applicable.
-        :param attack: The attack where the conversion is performed.
+        :param attack: The attack where the ability is performed.
         :return: True if the ability can be applied. False otherwise.
         """
         if self._skip:
@@ -238,9 +245,8 @@ class ConversionAbility(Ability):
 
     def apply(self, attack):
         """
-        Apply this conversion to the attack.
-        :param attack: The attack where the conversion is performed.
-        :return: True if conversion was possible. False otherwise.
+        Apply the ability to the action.
+        :param attack: The attack where the ability is performed.
         """
 
         def simulate_conversion(rng):
@@ -267,8 +273,42 @@ class ConversionAbility(Ability):
             n = {
                 'attack': priority[0][0],
                 'defense': priority[-1][0],
-            }.get(self.action, None)
+            }.get(self.action[0], None)
             if n is None:
-                raise AttributeError(self.action)
+                raise AttributeError(self.action[0])
         self._do_apply(attack, n)
         return True
+
+
+class FlyByAbility(Ability):
+
+    def __init__(self, json):
+        """
+        Create the Fly-By ability
+        :param json: Data model that describes the ability in JSON.
+        """
+        if json['type'] != 'custom':
+            raise ValueError(json['type'])
+        if json['name'] != 'Fly-By':
+            raise ValueError(json['name'])
+        super().__init__(json)
+
+    def can_apply(self, attack):
+        """
+        Check if the ability is applicable.
+        :param attack: The attack where the ability is performed.
+        :return: True if the ability can be applied. False otherwise.
+        """
+        return attack.context.attack_range <= 2
+
+    def apply(self, attack):
+        """
+        Apply the ability to the action.
+        :param attack: The attack where the ability is performed.
+        """
+        if self.can_apply(attack):
+            roll = Roll('blue')
+            roll.apply(attack)
+            attack.rolls['attack'].append(roll)
+            return True
+        return False

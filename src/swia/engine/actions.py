@@ -97,10 +97,10 @@ class Attack(Action):
         self.dodge = 0
 
         # Operational
-        self.miss = False
-        self.rolls = {}
+        self.rolls = {'attack': [], "defense": []}
+        self.rerolls_priority = {'attack': [], "defense": []}
         self._surge_abilities = []
-        self.rerolls_priority = {}
+        self.miss = False
 
         # Stats
         self.total_damage = 0
@@ -178,7 +178,6 @@ class Attack(Action):
 
         for pool_type, pool in [('attack', self.context.attacker.attack_pool),
                                 ('defense', self.context.defender.defense_pool)]:
-            self.rolls[pool_type] = []
             if pool is not None:
                 for die in pool:
                     roll = Roll(die)
@@ -195,7 +194,6 @@ class Attack(Action):
             current = 0
             dump = pickle.dumps(self, -1)
             for i, r in enumerate(self.rolls[side]):
-                face = r.face
                 for f in range(r.die.faces):
                     attack = pickle.loads(dump)
                     attack.rolls[side][i].revert(attack)
@@ -206,7 +204,7 @@ class Attack(Action):
                     if i not in total:
                         total[i] = 0
                     total[i] += attack.total_damage
-                    if f == face:
+                    if f == r.face:
                         current = attack.total_damage
             p = sorted(total.items(), key=lambda t: (t[1], t[0]), reverse=True)
             return p, current
@@ -235,9 +233,9 @@ class Attack(Action):
         """
         Apply modifiers (step 4).
         """
-        for conversion in self.context.attacker.get_abilities(action='attack', trigger=self.current_step) + \
-                          self.context.defender.get_abilities(action='defense', trigger=self.current_step):
-            conversion.apply(self)
+        for ability in self.context.attacker.get_abilities(action='attack', trigger=self.current_step) + \
+                       self.context.defender.get_abilities(action='defense', trigger=self.current_step):
+            ability.apply(self)
 
     def spend_surges(self):
         """
